@@ -156,6 +156,34 @@ export const OrcamentoPdf = forwardRef<HTMLDivElement, OrcamentoPdfProps>(
           </div>
         )}
 
+        {(orcamento.equipamentoTipo || orcamento.equipamentoModelo || orcamento.equipamentoCapacidade) && (
+          <div style={{ marginBottom: "20px" }}>
+            <div
+              style={{
+                fontSize: "11px",
+                fontWeight: 700,
+                color: "#64748b",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                marginBottom: "6px",
+              }}
+            >
+              Equipamento
+            </div>
+            <div style={{ display: "flex", gap: "24px", fontSize: "12px" }}>
+              {orcamento.equipamentoTipo && (
+                <div><strong>Tipo:</strong> {orcamento.equipamentoTipo}</div>
+              )}
+              {orcamento.equipamentoModelo && (
+                <div><strong>Modelo:</strong> {orcamento.equipamentoModelo}</div>
+              )}
+              {orcamento.equipamentoCapacidade && (
+                <div><strong>Capacidade:</strong> {orcamento.equipamentoCapacidade}</div>
+              )}
+            </div>
+          </div>
+        )}
+
         <div style={{ marginBottom: "20px" }}>
           <div
             style={{
