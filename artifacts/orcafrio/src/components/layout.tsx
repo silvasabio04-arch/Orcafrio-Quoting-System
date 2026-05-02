@@ -23,8 +23,8 @@ export function Layout({ children }: { children: ReactNode }) {
               <span className="sr-only">Toggle Menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="sm:max-w-xs">
-            <nav className="grid gap-6 text-lg font-medium">
+          <SheetContent side="left" className="sm:max-w-xs flex flex-col">
+            <nav className="grid gap-6 text-lg font-medium flex-1">
               <div className="flex items-center gap-2 text-primary font-bold text-xl mb-4">
                 <div className="bg-primary text-primary-foreground p-2 rounded-md">
                   <FileText className="h-5 w-5" />
@@ -46,6 +46,15 @@ export function Layout({ children }: { children: ReactNode }) {
                 </Link>
               ))}
             </nav>
+            <div className="border-t pt-4 mt-4 space-y-2 text-sm text-muted-foreground">
+              <Link href="/termos" className="block px-2.5 hover:text-foreground">
+                Termos de Uso
+              </Link>
+              <Link href="/privacidade" className="block px-2.5 hover:text-foreground">
+                Política de Privacidade
+              </Link>
+              <p className="px-2.5 pt-2 text-xs">© {new Date().getFullYear()} Orcafrio</p>
+            </div>
           </SheetContent>
         </Sheet>
 
@@ -76,9 +85,21 @@ export function Layout({ children }: { children: ReactNode }) {
         </nav>
       </header>
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8 max-w-5xl mx-auto w-full">
         {children}
       </main>
+
+      <footer className="hidden sm:flex border-t bg-background py-4 px-6 text-xs text-muted-foreground justify-between items-center">
+        <span>© {new Date().getFullYear()} Orcafrio. Todos os direitos reservados.</span>
+        <nav className="flex items-center gap-4">
+          <Link href="/termos" className="hover:text-primary transition-colors">
+            Termos de Uso
+          </Link>
+          <Link href="/privacidade" className="hover:text-primary transition-colors">
+            Política de Privacidade
+          </Link>
+        </nav>
+      </footer>
 
       {/* Bottom Navigation for Mobile (optional, but requested thumb-friendly, let's keep it simple with header for now) */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 border-t bg-background flex justify-around items-center h-16 pb-safe z-40">

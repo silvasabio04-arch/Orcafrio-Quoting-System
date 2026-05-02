@@ -13,6 +13,8 @@ import OrcamentoDetalhes from "@/pages/orcamentos/detalhes";
 import ClientesList from "@/pages/clientes/index";
 import ClienteNovo from "@/pages/clientes/novo";
 import ClienteDetalhes from "@/pages/clientes/detalhes";
+import Termos from "@/pages/termos";
+import Privacidade from "@/pages/privacidade";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +29,8 @@ function Router() {
       <Route path="/clientes" component={ClientesList} />
       <Route path="/clientes/novo" component={ClienteNovo} />
       <Route path="/clientes/:id" component={ClienteDetalhes} />
+      <Route path="/termos" component={Termos} />
+      <Route path="/privacidade" component={Privacidade} />
       <Route component={NotFound} />
     </Switch>
   );
