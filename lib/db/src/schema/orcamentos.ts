@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, numeric, integer, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, numeric, integer, pgEnum, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { clientesTable } from "./clientes";
@@ -26,7 +26,7 @@ export const categoriaItemEnum = pgEnum("categoria_item", [
 export const orcamentosTable = pgTable("orcamentos", {
   id: serial("id").primaryKey(),
   userId: text("user_id"),
-  numero: text("numero").notNull().unique(),
+  numero: text("numero").notNull(),
   clienteId: integer("cliente_id")
     .notNull()
     .references(() => clientesTable.id),
@@ -39,7 +39,7 @@ export const orcamentosTable = pgTable("orcamentos", {
   total: numeric("total", { precision: 10, scale: 2 }).notNull().default("0"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [uniqueIndex("orcamentos_user_numero_unique").on(t.userId, t.numero)]);
 
 export const itensOrcamentoTable = pgTable("itens_orcamento", {
   id: serial("id").primaryKey(),

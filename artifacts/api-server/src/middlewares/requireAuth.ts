@@ -26,7 +26,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
     if (!user) {
       const email = (auth.sessionClaims?.email as string) ?? null;
-      [user] = await db.insert(usersTable).values({ userId, email }).returning();
+      await db.insert(usersTable).values({ userId, email }).onConflictDoNothing();
+      [user] = await db.select().from(usersTable).where(eq(usersTable.userId, userId));
     }
 
     if (!user.isPaid) {
