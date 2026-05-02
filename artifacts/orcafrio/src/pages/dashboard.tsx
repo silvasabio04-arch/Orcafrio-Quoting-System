@@ -33,7 +33,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 pb-20 sm:pb-0">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Visão Geral</h1>
           <p className="text-muted-foreground">Resumo dos seus orçamentos</p>
@@ -47,11 +47,11 @@ export default function Dashboard() {
       </div>
 
       {isLoadingResumo ? (
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2">
           {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}
         </div>
       ) : resumo ? (
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total</CardTitle>

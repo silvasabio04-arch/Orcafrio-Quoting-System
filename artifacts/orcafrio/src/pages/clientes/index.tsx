@@ -15,7 +15,7 @@ export default function ClientesList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
           <p className="text-muted-foreground">Gerencie sua carteira de clientes</p>
@@ -39,11 +39,11 @@ export default function ClientesList() {
       </div>
 
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
         </div>
       ) : clientes && clientes.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4">
           {clientes.map((cliente) => (
             <Link key={cliente.id} href={`/clientes/${cliente.id}`}>
               <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full border shadow-sm">

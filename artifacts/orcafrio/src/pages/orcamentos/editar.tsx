@@ -267,7 +267,7 @@ export default function OrcamentoEditar() {
                       />
                     </div>
                     
-                    <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 items-end">
+                    <div className="grid gap-4 grid-cols-2 items-end">
                       <FormField
                         control={form.control}
                         name={`itens.${index}.quantidade`}
@@ -296,7 +296,7 @@ export default function OrcamentoEditar() {
                         )}
                       />
                       
-                      <div className="col-span-2 sm:col-span-1 p-3 bg-primary/10 rounded-md text-right">
+                      <div className="col-span-2 p-3 bg-primary/10 rounded-md text-right">
                         <span className="text-xs text-muted-foreground block mb-1">Subtotal</span>
                         <span className="font-bold text-primary">{formatCurrency(subtotal)}</span>
                       </div>
@@ -391,18 +391,15 @@ export default function OrcamentoEditar() {
             </CardContent>
           </Card>
 
-          {/* Sticky bottom bar for save action */}
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-[0_-4px_10px_-10px_rgba(0,0,0,0.1)] z-40 sm:sticky sm:bottom-0 sm:rounded-b-lg sm:p-0 sm:border-0 sm:shadow-none sm:bg-transparent sm:mt-8">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card sm:p-6 sm:border sm:rounded-lg max-w-5xl mx-auto">
-              <div className="flex flex-col items-center sm:items-start w-full sm:w-auto">
-                <span className="text-sm text-muted-foreground">Total do Orçamento</span>
-                <span className="text-2xl font-bold text-primary">{formatCurrency(totalGeral)}</span>
-              </div>
-              <Button type="submit" disabled={updateOrcamento.isPending} className="w-full sm:w-auto h-12 px-8">
-                <Save className="mr-2 h-5 w-5" />
-                {updateOrcamento.isPending ? "Salvando..." : "Salvar Alterações"}
-              </Button>
+          <div className="bg-card p-4 border rounded-lg flex flex-col gap-3 mt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Total do Orçamento</span>
+              <span className="text-2xl font-bold text-primary">{formatCurrency(totalGeral)}</span>
             </div>
+            <Button type="submit" disabled={updateOrcamento.isPending} className="w-full h-12">
+              <Save className="mr-2 h-5 w-5" />
+              {updateOrcamento.isPending ? "Salvando..." : "Salvar Alterações"}
+            </Button>
           </div>
         </form>
       </Form>

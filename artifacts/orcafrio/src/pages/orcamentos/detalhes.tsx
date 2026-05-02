@@ -138,7 +138,7 @@ export default function OrcamentoDetalhes() {
   return (
     <div className="space-y-6 pb-24 print:pb-0">
       {/* Header / Actions - Hidden in print */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between print:hidden">
+      <div className="flex flex-col gap-4 items-start justify-between print:hidden">
         <div className="flex items-center gap-4">
           <Link href="/orcamentos">
             <Button variant="outline" size="icon" className="shrink-0">
@@ -165,11 +165,11 @@ export default function OrcamentoDetalhes() {
           <Button variant="outline" size="icon" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleDelete} title="Excluir">
             <Trash2 className="h-4 w-4" />
           </Button>
-          <Button variant="outline" onClick={handlePrint} className="flex-1 sm:flex-none ml-2">
+          <Button variant="outline" onClick={handlePrint} className="flex-1">
             <Printer className="mr-2 h-4 w-4" />
             Imprimir
           </Button>
-          <Button onClick={handleShare} className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white">
+          <Button onClick={handleShare} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
             <Share2 className="mr-2 h-4 w-4" />
             WhatsApp
           </Button>
@@ -216,9 +216,9 @@ export default function OrcamentoDetalhes() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 print:lg:grid-cols-3">
         {/* Left Column: Customer & Details */}
-        <div className="space-y-6 lg:col-span-1">
+        <div className="space-y-6 print:lg:col-span-1">
           {orcamento.cliente && (
             <Card className="print:border-0 print:shadow-none print:p-0">
               <CardHeader className="print:px-0 print:pt-0">
@@ -278,7 +278,7 @@ export default function OrcamentoDetalhes() {
         </div>
 
         {/* Right Column: Items & Total */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-6 print:lg:col-span-2">
           <Card className="print:border-0 print:shadow-none print:p-0">
             <CardHeader className="print:px-0">
               <CardTitle className="text-lg flex items-center gap-2">

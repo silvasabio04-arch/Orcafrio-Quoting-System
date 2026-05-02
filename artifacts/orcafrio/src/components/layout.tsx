@@ -14,16 +14,16 @@ export function Layout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-muted/40 flex flex-col">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+    <div className="min-h-screen bg-muted/40 flex flex-col print:bg-white">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background px-4 print:hidden">
         <Sheet>
           <SheetTrigger asChild>
-            <Button size="icon" variant="outline" className="sm:hidden">
+            <Button size="icon" variant="outline">
               <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle Menu</span>
+              <span className="sr-only">Abrir menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="sm:max-w-xs flex flex-col">
+          <SheetContent side="left" className="max-w-xs flex flex-col">
             <nav className="grid gap-6 text-lg font-medium flex-1">
               <div className="flex items-center gap-3 mb-4">
                 <img
@@ -63,7 +63,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </SheetContent>
         </Sheet>
 
-        <div className="flex w-full justify-between items-center sm:hidden">
+        <div className="flex flex-1 justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
             <img
               src="/logo.jpg"
@@ -73,50 +73,13 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="font-bold text-primary">Orcafrio</span>
           </Link>
         </div>
-
-        <nav className="hidden sm:flex w-full items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2 text-primary font-bold text-xl mr-4">
-              <img
-                src="/logo.jpg"
-                alt="Orcafrio"
-                className="h-9 w-9 rounded-md object-cover shadow-sm"
-              />
-              Orcafrio
-            </Link>
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location === item.href ? "text-primary" : "text-muted-foreground"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </nav>
       </header>
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 sm:pb-8 max-w-5xl mx-auto w-full">
+      <main className="flex-1 p-4 pb-24 max-w-md mx-auto w-full print:max-w-none print:p-0 print:pb-0">
         {children}
       </main>
 
-      <footer className="hidden sm:flex border-t bg-background py-4 px-6 text-xs text-muted-foreground justify-between items-center">
-        <span>© {new Date().getFullYear()} Orcafrio. Todos os direitos reservados.</span>
-        <nav className="flex items-center gap-4">
-          <Link href="/termos" className="hover:text-primary transition-colors">
-            Termos de Uso
-          </Link>
-          <Link href="/privacidade" className="hover:text-primary transition-colors">
-            Política de Privacidade
-          </Link>
-        </nav>
-      </footer>
-
-      {/* Bottom Navigation for Mobile (optional, but requested thumb-friendly, let's keep it simple with header for now) */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 border-t bg-background flex justify-around items-center h-16 pb-safe z-40">
+      <nav className="fixed bottom-0 left-0 right-0 border-t bg-background flex justify-around items-center h-16 pb-safe z-40 print:hidden">
         {navItems.map((item) => {
           const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
           return (
@@ -132,7 +95,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </Link>
           );
         })}
-      </div>
+      </nav>
     </div>
   );
 }

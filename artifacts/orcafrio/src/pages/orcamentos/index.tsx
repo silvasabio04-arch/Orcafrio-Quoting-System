@@ -25,7 +25,7 @@ export default function OrcamentosList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Orçamentos</h1>
           <p className="text-muted-foreground">Gerencie todos os seus orçamentos</p>
@@ -38,7 +38,7 @@ export default function OrcamentosList() {
         </Link>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input 
@@ -77,25 +77,20 @@ export default function OrcamentosList() {
           {orcamentos.map((orcamento) => (
             <Link key={orcamento.id} href={`/orcamentos/${orcamento.id}`}>
               <Card className="hover:bg-muted/50 transition-colors cursor-pointer border shadow-sm">
-                <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between sm:justify-start gap-3">
-                      <p className="font-semibold text-lg leading-none">{orcamento.clienteNome}</p>
-                      <Badge variant="outline" className={`sm:hidden border-0 ${getStatusColor(orcamento.status)}`}>
-                        {getStatusLabel(orcamento.status)}
-                      </Badge>
-                    </div>
+                <CardContent className="p-4 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-semibold text-lg leading-tight">{orcamento.clienteNome}</p>
+                    <Badge variant="outline" className={`shrink-0 border-0 ${getStatusColor(orcamento.status)}`}>
+                      {getStatusLabel(orcamento.status)}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span className="font-mono bg-muted px-1.5 py-0.5 rounded">{orcamento.numero}</span>
+                      <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">{orcamento.numero}</span>
                       <span>•</span>
                       <span>{formatDate(orcamento.createdAt)}</span>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
                     <span className="font-bold text-lg">{formatCurrency(orcamento.total)}</span>
-                    <Badge variant="outline" className={`hidden sm:inline-flex border-0 ${getStatusColor(orcamento.status)}`}>
-                      {getStatusLabel(orcamento.status)}
-                    </Badge>
                   </div>
                 </CardContent>
               </Card>

@@ -38,9 +38,10 @@ Web app em português para geração de orçamentos de refrigeração/climatiza�
 - Campos: prazo de execução, validade, garantia, condições de pagamento, observações
 - Status: rascunho → enviado → aprovado / recusado / cancelado
 - Compartilhamento via WhatsApp (link `wa.me` com texto formatado)
-- Versão de impressão/PDF via `@media print`
+- Versão de impressão/PDF via `@media print` — cabeçalho com logo e tagline "Orçamento Inteligente"
 - CRUD de clientes com histórico de orçamentos
-- Mobile-first, todo em português
+- **Mobile-first universal**: layout em coluna estreita (`max-w-md`) centralizada em qualquer viewport — desktop renderiza a mesma UI mobile (estilo WhatsApp Web). Header com hambúrguer + logo, barra inferior fixa com 3 abas (Início, Orçamentos, Clientes) sempre visível. Páginas internas evitam `sm:`/`md:`/`lg:` em grids/flex pois esses breakpoints disparam por viewport e quebrariam dentro da coluna estreita; classes `lg:` permitidas só dentro de `print:` (impressão usa página inteira via `print:max-w-none`)
+- **Branding**: logo "OI" (Orçamento Inteligente — quadrado escuro com floco de neve no O e linhas técnicas no I) em `artifacts/orcafrio/public/logo.jpg`, usado no header (desktop+mobile), favicon, apple-touch-icon, sheet menu e cabeçalho de impressão
 - **Sugestão de preço por IA** — botão "Sugerir IA" em cada item; envia descrição + categoria para `/api/sugestao-preco`, retorna faixa (mín/sugerido/máx) + justificativa
 - **Sugestão de taxa de deslocamento por IA** — card dedicado: endereço do técnico (persistido em localStorage `orcafrio:enderecoTecnico`) + endereço do cliente (auto-preenchido) + distância opcional → `/api/sugestao-deslocamento` retorna estimativa de km, faixa de taxa e justificativa baseada em combustível/tempo; botão para adicionar como item de orçamento
 
