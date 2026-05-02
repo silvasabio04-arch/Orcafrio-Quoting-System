@@ -42,10 +42,11 @@ export function Layout({ children }: { children: ReactNode }) {
                   <span className="text-xs text-muted-foreground font-normal">Orçamento Inteligente</span>
                 </div>
               </div>
-              {navItems.map((item) => (
+              {sheetItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={() => setMenuOpen(false)}
                   className={`flex items-center gap-4 px-2.5 ${
                     location === item.href
                       ? "text-foreground font-bold"
