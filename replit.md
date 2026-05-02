@@ -77,6 +77,30 @@ Express 5 server com rotas REST para clientes, orçamentos, itens e dashboard.
 - `POST /api/sugestao-preco` — body: `{descricao, categoria, cidade?, estado?}` → `{precoMinimo, precoMaximo, precoSugerido, justificativa}`
 - `POST /api/sugestao-deslocamento` — body: `{enderecoTecnico, enderecoCliente, distanciaKm?}` → `{distanciaEstimadaKm, taxaMinima, taxaMaxima, taxaSugerida, justificativa}`
 
+## Hotmart Payment Integration
+
+Fluxo: usuário clica "Comprar" → vai para checkout Hotmart → paga → Hotmart chama webhook → app libera acesso (`isPaid = true`).
+
+**Setup (quando criar conta Hotmart):**
+1. Criar produto na Hotmart com preço R$ 19,99 (pagamento único)
+2. Copiar o link de checkout do produto
+3. Em Ferramentas → Webhooks, configurar webhook apontando para: `https://<domínio-publicado>/api/hotmart/webhook`
+4. Copiar o **Hottok** gerado pelo webhook
+
+**Secrets necessários (adicionar na aba Secrets do Replit):**
+- `HOTMART_HOTTOK` — token secreto para validar webhooks (segredo)
+- `HOTMART_CHECKOUT_URL` — link de checkout público (ex: `https://pay.hotmart.com/XXXXXXX`)
+
+**Endpoints:**
+- `POST /api/hotmart/webhook` — recebe eventos da Hotmart, verifica hottok, atualiza `isPaid`
+- `GET /api/payment/checkout-url` — retorna a URL de checkout para o frontend
+
+**Eventos tratados:**
+- `PURCHASE_COMPLETE` / `PURCHASE_APPROVED` → `isPaid = true`
+- `PURCHASE_REFUNDED` / `PURCHASE_CHARGEBACK` / `PURCHASE_CANCELED` → `isPaid = false`
+
+A liberação é feita por e-mail (campo `data.buyer.email` do webhook), que deve coincidir com o e-mail do login Google/Clerk do técnico.
+
 ## Database Schema
 
 - `users` — user_id (PK, Clerk ID), email, trial_start_at, trial_days (30), is_paid, created_at
