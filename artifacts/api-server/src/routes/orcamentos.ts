@@ -87,6 +87,9 @@ router.post("/orcamentos", requireAuth, async (req, res) => {
       garantia: z.string().nullable().optional(),
       condicoesPagamento: z.string().nullable().optional(),
       observacoes: z.string().nullable().optional(),
+      equipamentoTipo: z.string().nullable().optional(),
+      equipamentoModelo: z.string().nullable().optional(),
+      equipamentoCapacidade: z.string().nullable().optional(),
       itens: z.array(itemBodySchema).min(0),
     });
     const data = schema.parse(req.body);
@@ -104,6 +107,9 @@ router.post("/orcamentos", requireAuth, async (req, res) => {
         garantia: data.garantia ?? null,
         condicoesPagamento: data.condicoesPagamento ?? null,
         observacoes: data.observacoes ?? null,
+        equipamentoTipo: data.equipamentoTipo ?? null,
+        equipamentoModelo: data.equipamentoModelo ?? null,
+        equipamentoCapacidade: data.equipamentoCapacidade ?? null,
         total: "0",
         status: "rascunho",
       })
@@ -178,6 +184,9 @@ router.put("/orcamentos/:id", requireAuth, async (req, res) => {
       garantia: z.string().nullable().optional(),
       condicoesPagamento: z.string().nullable().optional(),
       observacoes: z.string().nullable().optional(),
+      equipamentoTipo: z.string().nullable().optional(),
+      equipamentoModelo: z.string().nullable().optional(),
+      equipamentoCapacidade: z.string().nullable().optional(),
       itens: z.array(itemBodySchema).optional(),
     });
     const data = schema.parse(req.body);
@@ -195,6 +204,9 @@ router.put("/orcamentos/:id", requireAuth, async (req, res) => {
     if (data.garantia !== undefined) updateData.garantia = data.garantia;
     if (data.condicoesPagamento !== undefined) updateData.condicoesPagamento = data.condicoesPagamento;
     if (data.observacoes !== undefined) updateData.observacoes = data.observacoes;
+    if (data.equipamentoTipo !== undefined) updateData.equipamentoTipo = data.equipamentoTipo;
+    if (data.equipamentoModelo !== undefined) updateData.equipamentoModelo = data.equipamentoModelo;
+    if (data.equipamentoCapacidade !== undefined) updateData.equipamentoCapacidade = data.equipamentoCapacidade;
 
     await db.update(orcamentosTable).set(updateData).where(eq(orcamentosTable.id, id));
 

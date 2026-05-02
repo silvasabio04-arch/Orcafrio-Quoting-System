@@ -33,6 +33,9 @@ const orcamentoSchema = z.object({
   garantia: z.string().optional(),
   condicoesPagamento: z.string().optional(),
   observacoes: z.string().optional(),
+  equipamentoTipo: z.string().optional(),
+  equipamentoModelo: z.string().optional(),
+  equipamentoCapacidade: z.string().optional(),
   itens: z.array(itemSchema).min(1, "Adicione pelo menos um item ao orçamento"),
 });
 
@@ -93,6 +96,9 @@ export default function OrcamentoNovo() {
       garantia: "90 dias",
       condicoesPagamento: "A vista / Pix",
       observacoes: "",
+      equipamentoTipo: "",
+      equipamentoModelo: "",
+      equipamentoCapacidade: "",
       itens: [
         {
           categoria: "manutencao_preventiva",
@@ -319,6 +325,53 @@ export default function OrcamentoNovo() {
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Equipamento</CardTitle>
+              <CardDescription>Informações da máquina (opcional)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 grid-cols-3">
+                <FormField
+                  control={form.control}
+                  name="equipamentoTipo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Tipo" className="h-12 sm:h-10 text-base sm:text-sm" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="equipamentoModelo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Modelo</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Modelo" className="h-12 sm:h-10 text-base sm:text-sm" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="equipamentoCapacidade"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Capacidade</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Capacidade" className="h-12 sm:h-10 text-base sm:text-sm" />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
 
