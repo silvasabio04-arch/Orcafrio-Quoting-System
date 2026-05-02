@@ -25,10 +25,12 @@ export function Layout({ children }: { children: ReactNode }) {
           </SheetTrigger>
           <SheetContent side="left" className="sm:max-w-xs flex flex-col">
             <nav className="grid gap-6 text-lg font-medium flex-1">
-              <div className="flex items-center gap-2 text-primary font-bold text-xl mb-4">
-                <div className="bg-primary text-primary-foreground p-2 rounded-md">
-                  <FileText className="h-5 w-5" />
-                </div>
+              <div className="flex items-center gap-3 text-primary font-bold text-xl mb-4">
+                <img
+                  src="/logo.jpg"
+                  alt="Orcafrio"
+                  className="h-10 w-10 rounded-lg object-cover shadow-sm"
+                />
                 Orcafrio
               </div>
               {navItems.map((item) => (
@@ -59,17 +61,26 @@ export function Layout({ children }: { children: ReactNode }) {
         </Sheet>
 
         <div className="flex w-full justify-between items-center sm:hidden">
-          <span className="font-bold text-primary">Orcafrio</span>
+          <Link href="/" className="flex items-center gap-2">
+            <img
+              src="/logo.jpg"
+              alt="Orcafrio"
+              className="h-8 w-8 rounded-md object-cover shadow-sm"
+            />
+            <span className="font-bold text-primary">Orcafrio</span>
+          </Link>
         </div>
 
         <nav className="hidden sm:flex w-full items-center justify-between">
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 text-primary font-bold text-xl mr-4">
-              <div className="bg-primary text-primary-foreground p-1.5 rounded-md">
-                <FileText className="h-5 w-5" />
-              </div>
+            <Link href="/" className="flex items-center gap-2 text-primary font-bold text-xl mr-4">
+              <img
+                src="/logo.jpg"
+                alt="Orcafrio"
+                className="h-9 w-9 rounded-md object-cover shadow-sm"
+              />
               Orcafrio
-            </div>
+            </Link>
             {navItems.map((item) => (
               <Link
                 key={item.href}

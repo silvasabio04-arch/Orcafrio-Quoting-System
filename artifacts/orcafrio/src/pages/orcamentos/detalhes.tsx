@@ -198,9 +198,16 @@ export default function OrcamentoDetalhes() {
       {/* Print Header */}
       <div className="hidden print:block mb-8 border-b pb-4">
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-primary">ORCAFRIO</h1>
-            <p className="text-sm text-gray-500 mt-1">Orçamento de Serviços</p>
+          <div className="flex items-center gap-3">
+            <img
+              src="/logo.jpg"
+              alt="Orcafrio"
+              className="h-14 w-14 rounded-lg object-cover"
+            />
+            <div>
+              <h1 className="text-3xl font-bold text-primary">ORCAFRIO</h1>
+              <p className="text-sm text-gray-500 mt-1">Orçamento de Serviços</p>
+            </div>
           </div>
           <div className="text-right">
             <h2 className="text-xl font-bold">{orcamento.numero}</h2>
