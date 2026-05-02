@@ -28,4 +28,10 @@ title = "Orcafrio — Imagem do Produto (600x600 PNG)"
 id = "RGNfJEnFq_VHB5N8uM8bD"
 uri = "file://attached_assets/generated_images/orcafrio-acesso.pdf"
 type = "pdf"
-title = "Orcafrio — Guia de Acesso (PDF para Hotmart)"
+title = "Orcafrio — Guia de Acesso (PDF)"
+
+[[outputs]]
+id = "T5ttvhpsghvk5qJ0lbZCW"
+uri = "file://attached_assets/generated_images/orcafrio-acesso-1.png"
+type = "image"
+title = "Orcafrio — Guia de Acesso (imagem PNG)"
