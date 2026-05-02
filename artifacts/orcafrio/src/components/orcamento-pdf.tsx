@@ -42,6 +42,9 @@ interface OrcamentoPdfData {
   garantia?: string | null;
   condicoesPagamento?: string | null;
   observacoes?: string | null;
+  equipamentoTipo?: string | null;
+  equipamentoModelo?: string | null;
+  equipamentoCapacidade?: string | null;
   cliente?: Cliente | null;
   itens: Item[];
 }
