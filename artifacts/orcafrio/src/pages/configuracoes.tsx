@@ -16,6 +16,7 @@ export default function Configuracoes() {
 
   const [nome, setNome] = useState(profile.nome);
   const [endereco, setEndereco] = useState(profile.endereco);
+  const [registroTecnico, setRegistroTecnico] = useState(profile.registroTecnico);
   const [hasSignature, setHasSignature] = useState(!!profile.assinatura);
 
   const handleClearSignature = () => {
@@ -33,6 +34,7 @@ export default function Configuracoes() {
     saveTecnicoProfile({
       nome: nome.trim(),
       endereco: endereco.trim(),
+      registroTecnico: registroTecnico.trim(),
       assinatura,
     });
     toast({ title: "Configurações salvas no aparelho" });
@@ -86,6 +88,19 @@ export default function Configuracoes() {
             />
             <p className="text-xs text-muted-foreground">
               Usado pela IA para calcular taxa de deslocamento
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="registro">Registro Técnico <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+            <Input
+              id="registro"
+              placeholder="Ex: CREA-SC 123456 ou CFT 78901"
+              value={registroTecnico}
+              onChange={(e) => setRegistroTecnico(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Aparece abaixo do seu nome no rodapé do orçamento (PDF)
             </p>
           </div>
         </CardContent>

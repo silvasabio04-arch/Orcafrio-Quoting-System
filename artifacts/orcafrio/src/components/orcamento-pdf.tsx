@@ -388,6 +388,11 @@ export const OrcamentoPdf = forwardRef<HTMLDivElement, OrcamentoPdfProps>(
               <div style={{ fontSize: "12px", fontWeight: 600 }}>
                 {tecnico.nome || "Técnico Responsável"}
               </div>
+              {tecnico.registroTecnico && (
+                <div style={{ fontSize: "10px", color: "#334155", marginTop: "2px" }}>
+                  {tecnico.registroTecnico}
+                </div>
+              )}
               {tecnico.endereco && (
                 <div style={{ fontSize: "10px", color: "#64748b", marginTop: "2px" }}>
                   {tecnico.endereco}
