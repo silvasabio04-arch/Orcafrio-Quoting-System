@@ -73,5 +73,10 @@
     "vite": "catalog:",
     "wouter": "^3.3.5",
     "zod": "catalog:"
+  },
+  "dependencies": {
+    "@types/html2pdf.js": "^0.10.0",
+    "html2pdf.js": "^0.14.0",
+    "react-signature-canvas": "1.1.0-alpha.2"
   }
 }

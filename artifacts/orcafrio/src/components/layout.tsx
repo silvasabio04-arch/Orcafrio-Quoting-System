@@ -1,11 +1,12 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Users, FileText, Menu } from "lucide-react";
+import { Home, Users, FileText, Menu, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const navItems = [
     { href: "/", label: "Início", icon: Home },
@@ -13,10 +14,15 @@ export function Layout({ children }: { children: ReactNode }) {
     { href: "/clientes", label: "Clientes", icon: Users },
   ];
 
+  const sheetItems = [
+    ...navItems,
+    { href: "/configuracoes", label: "Configurações", icon: Settings },
+  ];
+
   return (
     <div className="min-h-screen bg-muted/40 flex flex-col print:bg-white">
       <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background px-4 print:hidden">
-        <Sheet>
+        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
             <Button size="icon" variant="outline">
               <Menu className="h-5 w-5" />

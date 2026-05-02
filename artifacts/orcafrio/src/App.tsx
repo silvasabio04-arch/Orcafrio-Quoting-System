@@ -15,6 +15,7 @@ import ClienteNovo from "@/pages/clientes/novo";
 import ClienteDetalhes from "@/pages/clientes/detalhes";
 import Termos from "@/pages/termos";
 import Privacidade from "@/pages/privacidade";
+import Configuracoes from "@/pages/configuracoes";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/clientes" component={ClientesList} />
       <Route path="/clientes/novo" component={ClienteNovo} />
       <Route path="/clientes/:id" component={ClienteDetalhes} />
+      <Route path="/configuracoes" component={Configuracoes} />
       <Route path="/termos" component={Termos} />
       <Route path="/privacidade" component={Privacidade} />
       <Route component={NotFound} />
