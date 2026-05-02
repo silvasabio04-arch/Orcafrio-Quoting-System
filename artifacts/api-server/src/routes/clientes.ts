@@ -1,27 +1,38 @@
 import { Router } from "express";
 import { db, clientesTable } from "@workspace/db";
-import { eq, ilike, or } from "drizzle-orm";
+import { eq, ilike, or, and } from "drizzle-orm";
 import { z } from "zod";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
-router.get("/clientes", async (req, res) => {
+router.get("/clientes", requireAuth, async (req, res) => {
   try {
     const search = req.query.search as string | undefined;
+    const userId = req.userId!;
+
+    const userCondition = eq(clientesTable.userId, userId);
     let clientes;
     if (search) {
       clientes = await db
         .select()
         .from(clientesTable)
         .where(
-          or(
-            ilike(clientesTable.nome, `%${search}%`),
-            ilike(clientesTable.telefone, `%${search}%`)
+          and(
+            userCondition,
+            or(
+              ilike(clientesTable.nome, `%${search}%`),
+              ilike(clientesTable.telefone, `%${search}%`)
+            )
           )
         )
         .orderBy(clientesTable.nome);
     } else {
-      clientes = await db.select().from(clientesTable).orderBy(clientesTable.nome);
+      clientes = await db
+        .select()
+        .from(clientesTable)
+        .where(userCondition)
+        .orderBy(clientesTable.nome);
     }
     res.json(clientes);
   } catch (err) {
@@ -30,7 +41,7 @@ router.get("/clientes", async (req, res) => {
   }
 });
 
-router.post("/clientes", async (req, res) => {
+router.post("/clientes", requireAuth, async (req, res) => {
   try {
     const schema = z.object({
       nome: z.string().min(1),
@@ -40,7 +51,10 @@ router.post("/clientes", async (req, res) => {
       cpfCnpj: z.string().nullable().optional(),
     });
     const data = schema.parse(req.body);
-    const [cliente] = await db.insert(clientesTable).values(data).returning();
+    const [cliente] = await db
+      .insert(clientesTable)
+      .values({ ...data, userId: req.userId! })
+      .returning();
     res.status(201).json(cliente);
   } catch (err) {
     req.log.error(err);
@@ -48,10 +62,13 @@ router.post("/clientes", async (req, res) => {
   }
 });
 
-router.get("/clientes/:id", async (req, res) => {
+router.get("/clientes/:id", requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, id));
+    const [cliente] = await db
+      .select()
+      .from(clientesTable)
+      .where(and(eq(clientesTable.id, id), eq(clientesTable.userId, req.userId!)));
     if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
     res.json(cliente);
   } catch (err) {
@@ -60,7 +77,7 @@ router.get("/clientes/:id", async (req, res) => {
   }
 });
 
-router.put("/clientes/:id", async (req, res) => {
+router.put("/clientes/:id", requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const schema = z.object({
@@ -74,7 +91,7 @@ router.put("/clientes/:id", async (req, res) => {
     const [cliente] = await db
       .update(clientesTable)
       .set(data)
-      .where(eq(clientesTable.id, id))
+      .where(and(eq(clientesTable.id, id), eq(clientesTable.userId, req.userId!)))
       .returning();
     if (!cliente) return res.status(404).json({ error: "Cliente não encontrado" });
     res.json(cliente);
@@ -84,10 +101,12 @@ router.put("/clientes/:id", async (req, res) => {
   }
 });
 
-router.delete("/clientes/:id", async (req, res) => {
+router.delete("/clientes/:id", requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    await db.delete(clientesTable).where(eq(clientesTable.id, id));
+    await db
+      .delete(clientesTable)
+      .where(and(eq(clientesTable.id, id), eq(clientesTable.userId, req.userId!)));
     res.status(204).send();
   } catch (err) {
     req.log.error(err);

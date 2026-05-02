@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, clientesTable, orcamentosTable, itensOrcamentoTable } from "@workspace/db";
 import { eq, ilike, sql, and } from "drizzle-orm";
 import { z } from "zod";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
@@ -32,25 +33,23 @@ async function calcularTotal(orcamentoId: number): Promise<number> {
   return itens.reduce((acc, item) => acc + parseFloat(item.subtotal), 0);
 }
 
-async function gerarNumero(): Promise<string> {
+async function gerarNumero(userId: string): Promise<string> {
   const [result] = await db
     .select({ count: sql<number>`count(*)` })
-    .from(orcamentosTable);
+    .from(orcamentosTable)
+    .where(eq(orcamentosTable.userId, userId));
   const count = Number(result?.count ?? 0) + 1;
   return `ORC-${String(count).padStart(3, "0")}`;
 }
 
-router.get("/orcamentos", async (req, res) => {
+router.get("/orcamentos", requireAuth, async (req, res) => {
   try {
     const { status, clienteId, search } = req.query;
+    const userId = req.userId!;
 
-    const conditions = [];
-    if (status) {
-      conditions.push(eq(orcamentosTable.status, status as any));
-    }
-    if (clienteId) {
-      conditions.push(eq(orcamentosTable.clienteId, parseInt(clienteId as string)));
-    }
+    const conditions: any[] = [eq(orcamentosTable.userId, userId)];
+    if (status) conditions.push(eq(orcamentosTable.status, status as any));
+    if (clienteId) conditions.push(eq(orcamentosTable.clienteId, parseInt(clienteId as string)));
 
     const rows = await db
       .select({
@@ -63,7 +62,7 @@ router.get("/orcamentos", async (req, res) => {
       })
       .from(orcamentosTable)
       .innerJoin(clientesTable, eq(orcamentosTable.clienteId, clientesTable.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .where(and(...conditions))
       .orderBy(sql`${orcamentosTable.createdAt} DESC`);
 
     let filtered = rows;
@@ -79,7 +78,7 @@ router.get("/orcamentos", async (req, res) => {
   }
 });
 
-router.post("/orcamentos", async (req, res) => {
+router.post("/orcamentos", requireAuth, async (req, res) => {
   try {
     const schema = z.object({
       clienteId: z.number().int().positive(),
@@ -91,12 +90,14 @@ router.post("/orcamentos", async (req, res) => {
       itens: z.array(itemBodySchema).min(0),
     });
     const data = schema.parse(req.body);
-    const numero = await gerarNumero();
+    const userId = req.userId!;
+    const numero = await gerarNumero(userId);
 
     const [orcamento] = await db
       .insert(orcamentosTable)
       .values({
         numero,
+        userId,
         clienteId: data.clienteId,
         prazoExecucao: data.prazoExecucao ?? null,
         validadeOrcamento: data.validadeOrcamento ?? null,
@@ -135,21 +136,12 @@ router.post("/orcamentos", async (req, res) => {
 });
 
 async function getOrcamentoFull(id: number) {
-  const [orcamento] = await db
-    .select()
-    .from(orcamentosTable)
-    .where(eq(orcamentosTable.id, id));
+  const [orcamento] = await db.select().from(orcamentosTable).where(eq(orcamentosTable.id, id));
   if (!orcamento) return null;
 
-  const [cliente] = await db
-    .select()
-    .from(clientesTable)
-    .where(eq(clientesTable.id, orcamento.clienteId));
+  const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, orcamento.clienteId));
 
-  const itens = await db
-    .select()
-    .from(itensOrcamentoTable)
-    .where(eq(itensOrcamentoTable.orcamentoId, id));
+  const itens = await db.select().from(itensOrcamentoTable).where(eq(itensOrcamentoTable.orcamentoId, id));
 
   return {
     ...orcamento,
@@ -164,11 +156,11 @@ async function getOrcamentoFull(id: number) {
   };
 }
 
-router.get("/orcamentos/:id", async (req, res) => {
+router.get("/orcamentos/:id", requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const full = await getOrcamentoFull(id);
-    if (!full) return res.status(404).json({ error: "Orçamento não encontrado" });
+    if (!full || full.userId !== req.userId) return res.status(404).json({ error: "Orçamento não encontrado" });
     res.json(full);
   } catch (err) {
     req.log.error(err);
@@ -176,7 +168,7 @@ router.get("/orcamentos/:id", async (req, res) => {
   }
 });
 
-router.put("/orcamentos/:id", async (req, res) => {
+router.put("/orcamentos/:id", requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const schema = z.object({
@@ -189,6 +181,12 @@ router.put("/orcamentos/:id", async (req, res) => {
       itens: z.array(itemBodySchema).optional(),
     });
     const data = schema.parse(req.body);
+
+    const [existing] = await db
+      .select()
+      .from(orcamentosTable)
+      .where(and(eq(orcamentosTable.id, id), eq(orcamentosTable.userId, req.userId!)));
+    if (!existing) return res.status(404).json({ error: "Orçamento não encontrado" });
 
     const updateData: any = { updatedAt: new Date() };
     if (data.clienteId !== undefined) updateData.clienteId = data.clienteId;
@@ -230,10 +228,12 @@ router.put("/orcamentos/:id", async (req, res) => {
   }
 });
 
-router.delete("/orcamentos/:id", async (req, res) => {
+router.delete("/orcamentos/:id", requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    await db.delete(orcamentosTable).where(eq(orcamentosTable.id, id));
+    await db
+      .delete(orcamentosTable)
+      .where(and(eq(orcamentosTable.id, id), eq(orcamentosTable.userId, req.userId!)));
     res.status(204).send();
   } catch (err) {
     req.log.error(err);
@@ -241,7 +241,7 @@ router.delete("/orcamentos/:id", async (req, res) => {
   }
 });
 
-router.patch("/orcamentos/:id/status", async (req, res) => {
+router.patch("/orcamentos/:id/status", requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const schema = z.object({
@@ -251,7 +251,7 @@ router.patch("/orcamentos/:id/status", async (req, res) => {
     const [orcamento] = await db
       .update(orcamentosTable)
       .set({ status, updatedAt: new Date() })
-      .where(eq(orcamentosTable.id, id))
+      .where(and(eq(orcamentosTable.id, id), eq(orcamentosTable.userId, req.userId!)))
       .returning();
     if (!orcamento) return res.status(404).json({ error: "Orçamento não encontrado" });
     const full = await getOrcamentoFull(id);
@@ -262,9 +262,15 @@ router.patch("/orcamentos/:id/status", async (req, res) => {
   }
 });
 
-router.post("/orcamentos/:id/itens", async (req, res) => {
+router.post("/orcamentos/:id/itens", requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    const [existing] = await db
+      .select()
+      .from(orcamentosTable)
+      .where(and(eq(orcamentosTable.id, id), eq(orcamentosTable.userId, req.userId!)));
+    if (!existing) return res.status(404).json({ error: "Orçamento não encontrado" });
+
     const item = itemBodySchema.parse(req.body);
     const [novoItem] = await db
       .insert(itensOrcamentoTable)
@@ -296,7 +302,7 @@ router.post("/orcamentos/:id/itens", async (req, res) => {
   }
 });
 
-router.put("/orcamentos/:id/itens/:itemId", async (req, res) => {
+router.put("/orcamentos/:id/itens/:itemId", requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const itemId = parseInt(req.params.itemId);
@@ -332,7 +338,7 @@ router.put("/orcamentos/:id/itens/:itemId", async (req, res) => {
   }
 });
 
-router.delete("/orcamentos/:id/itens/:itemId", async (req, res) => {
+router.delete("/orcamentos/:id/itens/:itemId", requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const itemId = parseInt(req.params.itemId);

@@ -1,17 +1,23 @@
 import { Router } from "express";
-import { db, clientesTable, orcamentosTable, itensOrcamentoTable } from "@workspace/db";
-import { sql, eq } from "drizzle-orm";
+import { db, clientesTable, orcamentosTable } from "@workspace/db";
+import { sql, eq, and } from "drizzle-orm";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
-router.get("/dashboard/resumo", async (req, res) => {
+router.get("/dashboard/resumo", requireAuth, async (req, res) => {
   try {
+    const userId = req.userId!;
+
     const [totalOrcamentosResult] = await db
       .select({ count: sql<number>`count(*)` })
-      .from(orcamentosTable);
+      .from(orcamentosTable)
+      .where(eq(orcamentosTable.userId, userId));
+
     const [totalClientesResult] = await db
       .select({ count: sql<number>`count(*)` })
-      .from(clientesTable);
+      .from(clientesTable)
+      .where(eq(clientesTable.userId, userId));
 
     const statusCounts = await db
       .select({
@@ -20,6 +26,7 @@ router.get("/dashboard/resumo", async (req, res) => {
         total: sql<number>`coalesce(sum(${orcamentosTable.total}::numeric), 0)`,
       })
       .from(orcamentosTable)
+      .where(eq(orcamentosTable.userId, userId))
       .groupBy(orcamentosTable.status);
 
     const porStatus = {
@@ -51,8 +58,10 @@ router.get("/dashboard/resumo", async (req, res) => {
   }
 });
 
-router.get("/dashboard/orcamentos-recentes", async (req, res) => {
+router.get("/dashboard/orcamentos-recentes", requireAuth, async (req, res) => {
   try {
+    const userId = req.userId!;
+
     const rows = await db
       .select({
         id: orcamentosTable.id,
@@ -64,6 +73,7 @@ router.get("/dashboard/orcamentos-recentes", async (req, res) => {
       })
       .from(orcamentosTable)
       .innerJoin(clientesTable, eq(orcamentosTable.clienteId, clientesTable.id))
+      .where(eq(orcamentosTable.userId, userId))
       .orderBy(sql`${orcamentosTable.createdAt} DESC`)
       .limit(5);
 

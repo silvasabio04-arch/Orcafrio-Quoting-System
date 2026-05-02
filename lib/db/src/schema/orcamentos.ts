@@ -25,6 +25,7 @@ export const categoriaItemEnum = pgEnum("categoria_item", [
 
 export const orcamentosTable = pgTable("orcamentos", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   numero: text("numero").notNull().unique(),
   clienteId: integer("cliente_id")
     .notNull()
@@ -56,6 +57,7 @@ export const insertOrcamentoSchema = createInsertSchema(orcamentosTable).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  userId: true,
 });
 export const insertItemSchema = createInsertSchema(itensOrcamentoTable).omit({ id: true });
 

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
@@ -32,7 +33,7 @@ const deslocamentoResponseSchema = z.object({
   justificativa: z.string().min(1),
 });
 
-router.post("/sugestao-preco", async (req, res) => {
+router.post("/sugestao-preco", requireAuth, async (req, res) => {
   const parsed = sugestaoBodySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Dados inválidos", details: parsed.error.issues });
@@ -101,7 +102,7 @@ Responda APENAS com este JSON (sem texto fora do JSON, sem markdown):
   }
 });
 
-router.post("/sugestao-deslocamento", async (req, res) => {
+router.post("/sugestao-deslocamento", requireAuth, async (req, res) => {
   const parsed = deslocamentoBodySchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Dados inválidos", details: parsed.error.issues });

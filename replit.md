@@ -13,23 +13,26 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API framework**: Express 5
 - **Database**: PostgreSQL + Drizzle ORM
 - **Validation**: Zod, `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
+- **Auth**: Clerk (Google login + email; Replit-managed)
 - **Build**: esbuild (CJS bundle)
 
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
-
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
 
 ## Artifacts
 
 ### Orcafrio (`artifacts/orcafrio`)
 Web app em português para geração de orçamentos de refrigeração/climatização.
+
+**Authentication:**
+- Clerk auth (Google + email). Todas as rotas protegidas exigem sessão ativa.
+- 30 dias de teste gratuito a partir do primeiro login; após expirar → redireciona para `/trial-expired`.
+- Landing page pública em `/` para usuários não autenticados.
+- Usuário autenticado é redirecionado de `/` para `/inicio` (Dashboard).
 
 **Features:**
 - Dashboard com resumo de orçamentos (total, aprovados, pendentes, receita esperada)
@@ -40,32 +43,45 @@ Web app em português para geração de orçamentos de refrigeração/climatiza�
 - Compartilhamento via WhatsApp (link `wa.me` com texto formatado)
 - Versão de impressão/PDF via `@media print` — cabeçalho com logo e tagline "Orçamento Inteligente"
 - CRUD de clientes com histórico de orçamentos
-- **Mobile-first universal**: layout em coluna estreita (`max-w-md`) centralizada em qualquer viewport — desktop renderiza a mesma UI mobile (estilo WhatsApp Web). Header com hambúrguer + logo, barra inferior fixa com 3 abas (Início, Orçamentos, Clientes) sempre visível. Páginas internas evitam `sm:`/`md:`/`lg:` em grids/flex pois esses breakpoints disparam por viewport e quebrariam dentro da coluna estreita; classes `lg:` permitidas só dentro de `print:` (impressão usa página inteira via `print:max-w-none`)
-- **Branding**: logo "OI" (Orçamento Inteligente — quadrado escuro com floco de neve no O e linhas técnicas no I) em `artifacts/orcafrio/public/logo.jpg`, usado no header (desktop+mobile), favicon, apple-touch-icon, sheet menu e cabeçalho de impressão
-- **Sugestão de preço por IA** — botão "Sugerir IA" em cada item; envia descrição + categoria para `/api/sugestao-preco`, retorna faixa (mín/sugerido/máx) + justificativa
-- **Sugestão de taxa de deslocamento por IA** — card dedicado: endereço do técnico (persistido em localStorage `orcafrio:enderecoTecnico`) + endereço do cliente (auto-preenchido) + distância opcional → `/api/sugestao-deslocamento` retorna estimativa de km, faixa de taxa e justificativa baseada em combustível/tempo; botão para adicionar como item de orçamento
+- **Mobile-first universal**: layout em coluna estreita (`max-w-md`) centralizada
+- **Sugestão de preço por IA** — botão "Sugerir IA" em cada item
+- **Sugestão de taxa de deslocamento por IA**
 
 **Routes:**
-- `/` — Dashboard
-- `/orcamentos` — Lista com filtro por status
-- `/orcamentos/novo` — Criar orçamento
-- `/orcamentos/:id` — Ver detalhes + ações
-- `/orcamentos/:id/editar` — Editar
-- `/clientes` — Lista de clientes
-- `/clientes/novo` — Novo cliente
-- `/clientes/:id` — Detalhes do cliente
+- `/` — Landing page (não autenticado) ou redirect para `/inicio` (autenticado)
+- `/sign-in/*?` — Login (Clerk)
+- `/sign-up/*?` — Cadastro (Clerk)
+- `/trial-expired` — Período de teste encerrado
+- `/inicio` — Dashboard (protegido)
+- `/orcamentos` — Lista com filtro por status (protegido)
+- `/orcamentos/novo` — Criar orçamento (protegido)
+- `/orcamentos/:id` — Ver detalhes + ações (protegido)
+- `/orcamentos/:id/editar` — Editar (protegido)
+- `/clientes` — Lista de clientes (protegido)
+- `/clientes/novo` — Novo cliente (protegido)
+- `/clientes/:id` — Detalhes do cliente (protegido)
+- `/configuracoes` — Configurações do técnico (protegido)
 
 ### API Server (`artifacts/api-server`)
 Express 5 server com rotas REST para clientes, orçamentos, itens e dashboard.
 
-**Rotas IA (não-OpenAPI, usam OpenAI via `@workspace/integrations-openai-ai-server`):**
+**Auth middleware**: `requireAuth` (`artifacts/api-server/src/middlewares/requireAuth.ts`)
+- Verifica sessão Clerk via `getAuth(req)`
+- Cria registro de usuário na tabela `users` no primeiro acesso (com `trialStartAt = now()`)
+- Retorna 402 se período de teste encerrado e `isPaid = false`
+- Define `req.userId` para uso nos handlers
+
+**Clerk proxy**: montado em `/api/__clerk` via `clerkProxyMiddleware`
+
+**Rotas IA (requerem auth):**
 - `POST /api/sugestao-preco` — body: `{descricao, categoria, cidade?, estado?}` → `{precoMinimo, precoMaximo, precoSugerido, justificativa}`
 - `POST /api/sugestao-deslocamento` — body: `{enderecoTecnico, enderecoCliente, distanciaKm?}` → `{distanciaEstimadaKm, taxaMinima, taxaMaxima, taxaSugerida, justificativa}`
 
-Modelo: `gpt-5-mini` com `max_completion_tokens: 8192` e `response_format: { type: "json_object" }` (gpt-5 é reasoning model — limite baixo de tokens resulta em conteúdo vazio porque consome tudo em raciocínio interno). Saídas são re-validadas com Zod antes de retornar para o cliente.
-
 ## Database Schema
 
-- `clientes` — id, nome, telefone, email, endereco, cpf_cnpj, created_at
-- `orcamentos` — id, numero, cliente_id, status, prazo_execucao, validade_orcamento, garantia, condicoes_pagamento, observacoes, total, created_at, updated_at
+- `users` — user_id (PK, Clerk ID), email, trial_start_at, trial_days (30), is_paid, created_at
+- `clientes` — id, user_id, nome, telefone, email, endereco, cpf_cnpj, created_at
+- `orcamentos` — id, user_id, numero, cliente_id, status, prazo_execucao, validade_orcamento, garantia, condicoes_pagamento, observacoes, total, created_at, updated_at
 - `itens_orcamento` — id, orcamento_id, categoria, descricao, quantidade, preco_unitario, subtotal
+
+**Multi-tenancy**: todos os dados são filtrados por `user_id` — cada técnico vê apenas os seus próprios clientes e orçamentos.
