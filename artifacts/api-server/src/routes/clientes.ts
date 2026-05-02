@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, clientesTable } from "@workspace/db";
-import { eq, ilike, or, and } from "drizzle-orm";
+import { eq, ilike, or, and, desc } from "drizzle-orm";
 import { z } from "zod";
 import { requireAuth } from "../middlewares/requireAuth";
 
@@ -26,13 +26,13 @@ router.get("/clientes", requireAuth, async (req, res) => {
             )
           )
         )
-        .orderBy(clientesTable.nome);
+        .orderBy(desc(clientesTable.createdAt));
     } else {
       clientes = await db
         .select()
         .from(clientesTable)
         .where(userCondition)
-        .orderBy(clientesTable.nome);
+        .orderBy(desc(clientesTable.createdAt));
     }
     res.json(clientes);
   } catch (err) {
