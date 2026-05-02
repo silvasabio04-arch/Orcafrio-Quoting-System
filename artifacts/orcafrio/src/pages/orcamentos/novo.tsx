@@ -2,8 +2,8 @@ import { useLocation } from "wouter";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useState } from "react";
-import { Plus, Trash2, ArrowLeft, Save, Sparkles, TrendingUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Trash2, ArrowLeft, Save, Sparkles, TrendingUp, MapPin, Car } from "lucide-react";
 import { useListClientes, useCreateOrcamento, getListOrcamentosQueryKey, getGetDashboardResumoQueryKey, getGetOrcamentosRecentesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { CreateItemBodyCategoria } from "@workspace/api-client-react";
 import { formatCurrency } from "@/lib/format";
+
+const ENDERECO_TECNICO_KEY = "orcafrio:enderecoTecnico";
 
 const itemSchema = z.object({
   categoria: z.nativeEnum(CreateItemBodyCategoria),
@@ -43,6 +45,14 @@ interface SugestaoPrecо {
   justificativa: string;
 }
 
+interface SugestaoDeslocamento {
+  distanciaEstimadaKm: number;
+  taxaMinima: number;
+  taxaMaxima: number;
+  taxaSugerida: number;
+  justificativa: string;
+}
+
 const CATEGORIA_LABELS: Record<string, string> = {
   manutencao_preventiva: "Manutenção Preventiva",
   higienizacao: "Higienização",
@@ -62,6 +72,14 @@ export default function OrcamentoNovo() {
 
   const [sugestoes, setSugestoes] = useState<Record<number, SugestaoPrecо>>({});
   const [loadingSugestao, setLoadingSugestao] = useState<Record<number, boolean>>({});
+
+  const [enderecoTecnico, setEnderecoTecnico] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(ENDERECO_TECNICO_KEY) ?? "";
+  });
+  const [distanciaKm, setDistanciaKm] = useState<string>("");
+  const [sugestaoDeslocamento, setSugestaoDeslocamento] = useState<SugestaoDeslocamento | null>(null);
+  const [loadingDeslocamento, setLoadingDeslocamento] = useState(false);
 
   const { data: clientes, isLoading: isLoadingClientes } = useListClientes();
   const createOrcamento = useCreateOrcamento();
@@ -92,7 +110,88 @@ export default function OrcamentoNovo() {
   });
 
   const watchedItens = form.watch("itens");
+  const watchedClienteId = form.watch("clienteId");
+  const clienteSelecionado = clientes?.find((c) => c.id === Number(watchedClienteId));
   const totalGeral = watchedItens.reduce((acc, item) => acc + (item.quantidade || 0) * (item.precoUnitario || 0), 0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (enderecoTecnico.trim()) {
+      window.localStorage.setItem(ENDERECO_TECNICO_KEY, enderecoTecnico);
+    } else {
+      window.localStorage.removeItem(ENDERECO_TECNICO_KEY);
+    }
+  }, [enderecoTecnico]);
+
+  useEffect(() => {
+    setSugestaoDeslocamento(null);
+  }, [watchedClienteId]);
+
+  const buscarSugestaoDeslocamento = async () => {
+    if (!enderecoTecnico.trim()) {
+      toast({
+        title: "Informe seu endereço",
+        description: "Preencha o endereço de origem (técnico) para calcular o deslocamento.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!clienteSelecionado?.endereco) {
+      toast({
+        title: "Cliente sem endereço",
+        description: "Selecione um cliente que tenha endereço cadastrado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoadingDeslocamento(true);
+    setSugestaoDeslocamento(null);
+
+    try {
+      const distanciaTrimmed = distanciaKm.trim();
+      const distanciaParsed = distanciaTrimmed === "" ? null : Number(distanciaTrimmed);
+      const response = await fetch("/api/sugestao-deslocamento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          enderecoTecnico: enderecoTecnico.trim(),
+          enderecoCliente: clienteSelecionado.endereco,
+          distanciaKm: distanciaParsed !== null && Number.isFinite(distanciaParsed) ? distanciaParsed : null,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Erro na resposta da API");
+
+      const data: SugestaoDeslocamento = await response.json();
+      setSugestaoDeslocamento(data);
+    } catch {
+      toast({
+        title: "Erro ao calcular deslocamento",
+        description: "Não foi possível obter a estimativa de deslocamento. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingDeslocamento(false);
+    }
+  };
+
+  const adicionarDeslocamentoComoItem = (valor: number) => {
+    const distancia = sugestaoDeslocamento?.distanciaEstimadaKm
+      ? `${sugestaoDeslocamento.distanciaEstimadaKm} km`
+      : "ida e volta";
+    append({
+      categoria: "outros",
+      descricao: `Taxa de deslocamento (${distancia})`,
+      quantidade: 1,
+      precoUnitario: valor,
+    });
+    setSugestaoDeslocamento(null);
+    toast({
+      title: "Deslocamento adicionado",
+      description: `Taxa de ${formatCurrency(valor)} adicionada aos itens do orçamento.`,
+    });
+  };
 
   const buscarSugestao = async (index: number) => {
     const item = watchedItens[index];
@@ -220,6 +319,131 @@ export default function OrcamentoNovo() {
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Car className="h-5 w-5 text-blue-600" />
+                <CardTitle>Taxa de Deslocamento</CardTitle>
+              </div>
+              <CardDescription>
+                Informe seu endereço de partida e a IA estima o valor justo a cobrar pela viagem até o cliente
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium leading-none mb-2 block">
+                  Endereço do Técnico (origem)
+                </label>
+                <Input
+                  value={enderecoTecnico}
+                  onChange={(e) => setEnderecoTecnico(e.target.value)}
+                  placeholder="Ex: Rua das Acácias, 100 - Bairro X - São Paulo, SP"
+                  className="h-12 sm:h-10 text-base sm:text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Salvo automaticamente para os próximos orçamentos
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium leading-none mb-2 block flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" /> Endereço do Cliente (destino)
+                  </label>
+                  <Input
+                    value={clienteSelecionado?.endereco ?? ""}
+                    placeholder="Selecione um cliente acima"
+                    readOnly
+                    className="h-12 sm:h-10 text-base sm:text-sm bg-muted"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium leading-none mb-2 block">
+                    Distância (km) — opcional
+                  </label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={distanciaKm}
+                    onChange={(e) => setDistanciaKm(e.target.value)}
+                    placeholder="Deixe em branco para a IA estimar"
+                    className="h-12 sm:h-10 text-base sm:text-sm"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                onClick={buscarSugestaoDeslocamento}
+                disabled={loadingDeslocamento}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                {loadingDeslocamento ? "Calculando..." : "Calcular Taxa de Deslocamento (IA)"}
+              </Button>
+
+              {sugestaoDeslocamento && (
+                <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2 text-blue-700 font-medium text-sm">
+                    <TrendingUp className="h-4 w-4" />
+                    Estimativa de Taxa de Deslocamento
+                    {sugestaoDeslocamento.distanciaEstimadaKm > 0 && (
+                      <span className="text-xs font-normal text-blue-600 ml-auto">
+                        ~ {sugestaoDeslocamento.distanciaEstimadaKm} km (ida)
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-white rounded-md p-2 border border-blue-100">
+                      <span className="text-xs text-muted-foreground block">Mínimo</span>
+                      <span className="font-semibold text-sm">{formatCurrency(sugestaoDeslocamento.taxaMinima)}</span>
+                    </div>
+                    <div className="bg-blue-600 rounded-md p-2 text-white">
+                      <span className="text-xs opacity-80 block">Sugerido</span>
+                      <span className="font-bold text-sm">{formatCurrency(sugestaoDeslocamento.taxaSugerida)}</span>
+                    </div>
+                    <div className="bg-white rounded-md p-2 border border-blue-100">
+                      <span className="text-xs text-muted-foreground block">Máximo</span>
+                      <span className="font-semibold text-sm">{formatCurrency(sugestaoDeslocamento.taxaMaxima)}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic">{sugestaoDeslocamento.justificativa}</p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs"
+                      onClick={() => adicionarDeslocamentoComoItem(sugestaoDeslocamento.taxaSugerida)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Adicionar ao orçamento ({formatCurrency(sugestaoDeslocamento.taxaSugerida)})
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs border-blue-200 text-blue-700"
+                      onClick={() => adicionarDeslocamentoComoItem(sugestaoDeslocamento.taxaMinima)}
+                    >
+                      Usar mínimo
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs border-blue-200 text-blue-700"
+                      onClick={() => adicionarDeslocamentoComoItem(sugestaoDeslocamento.taxaMaxima)}
+                    >
+                      Usar máximo
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

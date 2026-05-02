@@ -41,6 +41,8 @@ Web app em português para geração de orçamentos de refrigeração/climatiza�
 - Versão de impressão/PDF via `@media print`
 - CRUD de clientes com histórico de orçamentos
 - Mobile-first, todo em português
+- **Sugestão de preço por IA** — botão "Sugerir IA" em cada item; envia descrição + categoria para `/api/sugestao-preco`, retorna faixa (mín/sugerido/máx) + justificativa
+- **Sugestão de taxa de deslocamento por IA** — card dedicado: endereço do técnico (persistido em localStorage `orcafrio:enderecoTecnico`) + endereço do cliente (auto-preenchido) + distância opcional → `/api/sugestao-deslocamento` retorna estimativa de km, faixa de taxa e justificativa baseada em combustível/tempo; botão para adicionar como item de orçamento
 
 **Routes:**
 - `/` — Dashboard
@@ -54,6 +56,12 @@ Web app em português para geração de orçamentos de refrigeração/climatiza�
 
 ### API Server (`artifacts/api-server`)
 Express 5 server com rotas REST para clientes, orçamentos, itens e dashboard.
+
+**Rotas IA (não-OpenAPI, usam OpenAI via `@workspace/integrations-openai-ai-server`):**
+- `POST /api/sugestao-preco` — body: `{descricao, categoria, cidade?, estado?}` → `{precoMinimo, precoMaximo, precoSugerido, justificativa}`
+- `POST /api/sugestao-deslocamento` — body: `{enderecoTecnico, enderecoCliente, distanciaKm?}` → `{distanciaEstimadaKm, taxaMinima, taxaMaxima, taxaSugerida, justificativa}`
+
+Modelo: `gpt-5-mini` com `max_completion_tokens: 8192` e `response_format: { type: "json_object" }` (gpt-5 é reasoning model — limite baixo de tokens resulta em conteúdo vazio porque consome tudo em raciocínio interno). Saídas são re-validadas com Zod antes de retornar para o cliente.
 
 ## Database Schema
 
