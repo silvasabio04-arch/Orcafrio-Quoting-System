@@ -22,6 +22,8 @@ import ClienteDetalhes from "@/pages/clientes/detalhes";
 import Termos from "@/pages/termos";
 import Privacidade from "@/pages/privacidade";
 import Configuracoes from "@/pages/configuracoes";
+import Aprovacao from "@/pages/aprovacao";
+import Notificacoes from "@/pages/notificacoes";
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -207,6 +209,10 @@ function AppRoutes() {
       <Route path="/configuracoes">
         {() => <ProtectedRoute component={Configuracoes} />}
       </Route>
+      <Route path="/notificacoes">
+        {() => <ProtectedRoute component={Notificacoes} />}
+      </Route>
+      <Route path="/aprovacao/:token" component={Aprovacao} />
       <Route path="/termos">
         {() => <ProtectedRoute component={Termos} />}
       </Route>

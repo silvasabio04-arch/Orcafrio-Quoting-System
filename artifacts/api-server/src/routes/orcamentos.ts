@@ -96,6 +96,8 @@ router.post("/orcamentos", requireAuth, async (req, res) => {
     const userId = req.userId!;
     const numero = await gerarNumero(userId);
 
+    const aprovacaoToken = crypto.randomUUID();
+
     const [orcamento] = await db
       .insert(orcamentosTable)
       .values({
@@ -110,6 +112,7 @@ router.post("/orcamentos", requireAuth, async (req, res) => {
         equipamentoTipo: data.equipamentoTipo ?? null,
         equipamentoModelo: data.equipamentoModelo ?? null,
         equipamentoCapacidade: data.equipamentoCapacidade ?? null,
+        aprovacaoToken,
         total: "0",
         status: "rascunho",
       })
@@ -237,6 +240,113 @@ router.put("/orcamentos/:id", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error(err);
     res.status(400).json({ error: "Dados inválidos" });
+  }
+});
+
+router.get("/aprovacao/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+    const [orc] = await db.select().from(orcamentosTable).where(eq(orcamentosTable.aprovacaoToken, token));
+    if (!orc) return res.status(404).json({ error: "Orçamento não encontrado" });
+    const [cliente] = await db.select().from(clientesTable).where(eq(clientesTable.id, orc.clienteId));
+    const itens = await db.select().from(itensOrcamentoTable).where(eq(itensOrcamentoTable.orcamentoId, orc.id));
+    res.json({
+      numero: orc.numero,
+      status: orc.status,
+      createdAt: orc.createdAt,
+      total: parseFloat(orc.total as any),
+      prazoExecucao: orc.prazoExecucao,
+      validadeOrcamento: orc.validadeOrcamento,
+      garantia: orc.garantia,
+      condicoesPagamento: orc.condicoesPagamento,
+      observacoes: orc.observacoes,
+      equipamentoTipo: orc.equipamentoTipo,
+      equipamentoModelo: orc.equipamentoModelo,
+      equipamentoCapacidade: orc.equipamentoCapacidade,
+      respostaCliente: orc.respostaCliente,
+      cliente: cliente ? { nome: cliente.nome, telefone: cliente.telefone } : null,
+      itens: itens.map(i => ({
+        id: i.id,
+        categoria: i.categoria,
+        descricao: i.descricao,
+        quantidade: parseFloat(i.quantidade as any),
+        precoUnitario: parseFloat(i.precoUnitario as any),
+        subtotal: parseFloat(i.subtotal as any),
+      })),
+    });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Erro ao buscar orçamento" });
+  }
+});
+
+router.post("/aprovacao/:token/resposta", async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { resposta, comentario } = z.object({
+      resposta: z.enum(["aprovado", "recusado"]),
+      comentario: z.string().max(500).optional(),
+    }).parse(req.body);
+
+    const [orc] = await db.select().from(orcamentosTable).where(eq(orcamentosTable.aprovacaoToken, token));
+    if (!orc) return res.status(404).json({ error: "Orçamento não encontrado" });
+    if (orc.respostaCliente) return res.status(409).json({ error: "Orçamento já respondido" });
+
+    await db.update(orcamentosTable).set({
+      respostaCliente: resposta,
+      comentarioCliente: comentario ?? null,
+      respostaAt: new Date(),
+      respostaLida: false,
+      status: resposta,
+      updatedAt: new Date(),
+    }).where(eq(orcamentosTable.aprovacaoToken, token));
+
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error(err);
+    res.status(400).json({ error: "Dados inválidos" });
+  }
+});
+
+router.get("/notificacoes", requireAuth, async (req, res) => {
+  try {
+    const rows = await db
+      .select({
+        id: orcamentosTable.id,
+        numero: orcamentosTable.numero,
+        respostaCliente: orcamentosTable.respostaCliente,
+        comentarioCliente: orcamentosTable.comentarioCliente,
+        respostaAt: orcamentosTable.respostaAt,
+        respostaLida: orcamentosTable.respostaLida,
+        clienteNome: clientesTable.nome,
+      })
+      .from(orcamentosTable)
+      .innerJoin(clientesTable, eq(orcamentosTable.clienteId, clientesTable.id))
+      .where(and(
+        eq(orcamentosTable.userId, req.userId!),
+        sql`${orcamentosTable.respostaCliente} IS NOT NULL`,
+      ))
+      .orderBy(sql`${orcamentosTable.respostaAt} DESC`);
+    res.json(rows);
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Erro ao listar notificações" });
+  }
+});
+
+router.post("/notificacoes/marcar-lidas", requireAuth, async (req, res) => {
+  try {
+    await db.update(orcamentosTable)
+      .set({ respostaLida: true })
+      .where(and(
+        eq(orcamentosTable.userId, req.userId!),
+        eq(orcamentosTable.respostaLida, false),
+        sql`${orcamentosTable.respostaCliente} IS NOT NULL`,
+      ));
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Erro ao marcar notificações" });
   }
 });
 

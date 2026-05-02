@@ -52,10 +52,11 @@ interface OrcamentoPdfData {
 interface OrcamentoPdfProps {
   orcamento: OrcamentoPdfData;
   tecnico: TecnicoProfile;
+  aprovacaoUrl?: string;
 }
 
 export const OrcamentoPdf = forwardRef<HTMLDivElement, OrcamentoPdfProps>(
-  ({ orcamento, tecnico }, ref) => {
+  ({ orcamento, tecnico, aprovacaoUrl }, ref) => {
     return (
       <div
         ref={ref}
@@ -433,9 +434,32 @@ export const OrcamentoPdf = forwardRef<HTMLDivElement, OrcamentoPdfProps>(
           </div>
         </div>
 
+        {aprovacaoUrl && (
+          <div
+            style={{
+              marginTop: "32px",
+              padding: "14px 16px",
+              borderRadius: "8px",
+              border: "1px solid #bfdbfe",
+              background: "#eff6ff",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: "11px", fontWeight: 700, color: "#1e40af", marginBottom: "4px" }}>
+              ✅ Aprovar ou recusar este orçamento
+            </div>
+            <div style={{ fontSize: "10px", color: "#334155", wordBreak: "break-all" }}>
+              {aprovacaoUrl}
+            </div>
+            <div style={{ fontSize: "9px", color: "#64748b", marginTop: "4px" }}>
+              Acesse o link acima pelo celular para responder
+            </div>
+          </div>
+        )}
+
         <div
           style={{
-            marginTop: "32px",
+            marginTop: "24px",
             paddingTop: "12px",
             borderTop: "1px solid #e2e8f0",
             textAlign: "center",

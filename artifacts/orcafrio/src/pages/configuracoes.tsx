@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Eraser, PenTool, Save, Settings, User } from "lucide-react";
+import { Eraser, PenTool, Save, Settings, User, Cpu, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,36 @@ export default function Configuracoes() {
   const [registroTecnico, setRegistroTecnico] = useState(profile.registroTecnico);
   const [veiculoTipo, setVeiculoTipo] = useState(profile.veiculoTipo);
   const [veiculoCombustivel, setVeiculoCombustivel] = useState(profile.veiculoCombustivel);
+  const [veiculoModelo, setVeiculoModelo] = useState(profile.veiculoModelo);
+  const [veiculoAno, setVeiculoAno] = useState(profile.veiculoAno);
+  const [calibrando, setCalibrando] = useState(false);
+  const [calibracaoResumo, setCalibracaoResumo] = useState(profile.veiculoCustoKm ? `Custo salvo: R$ ${Number(profile.veiculoCustoKm).toFixed(3)}/km` : "");
   const [hasSignature, setHasSignature] = useState(!!profile.assinatura);
+
+  const handleCalibrarVeiculo = async () => {
+    if (!veiculoTipo || !veiculoCombustivel) {
+      toast({ title: "Preencha tipo e combustível do veículo primeiro", variant: "destructive" });
+      return;
+    }
+    setCalibrando(true);
+    setCalibracaoResumo("");
+    try {
+      const r = await fetch("/api/calibrar-veiculo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ veiculoTipo, veiculoCombustivel, veiculoModelo: veiculoModelo.trim() || undefined, veiculoAno: veiculoAno.trim() || undefined }),
+      });
+      if (!r.ok) throw new Error();
+      const data: { custoKm: number; resumo: string } = await r.json();
+      saveTecnicoProfile({ veiculoCustoKm: String(data.custoKm) });
+      setCalibracaoResumo(data.resumo);
+      toast({ title: "Veículo calibrado com sucesso!" });
+    } catch {
+      toast({ title: "Erro ao calibrar. Tente novamente.", variant: "destructive" });
+    } finally {
+      setCalibrando(false);
+    }
+  };
 
   const handleClearSignature = () => {
     sigRef.current?.clear();
@@ -40,6 +69,8 @@ export default function Configuracoes() {
       registroTecnico: registroTecnico.trim(),
       veiculoTipo,
       veiculoCombustivel,
+      veiculoModelo: veiculoModelo.trim(),
+      veiculoAno: veiculoAno.trim(),
       assinatura,
     });
     toast({ title: "Configurações salvas no aparelho" });
@@ -92,7 +123,7 @@ export default function Configuracoes() {
               rows={2}
             />
             <p className="text-xs text-muted-foreground">
-              Usado pela IA para calcular taxa de deslocamento
+              Usado pela IA para calcular a taxa de visita técnica
             </p>
           </div>
 
@@ -140,9 +171,57 @@ export default function Configuracoes() {
               </Select>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground -mt-2">
-            Usado pela IA para calcular o deslocamento com mais precisão
-          </p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="veiculoModelo">Modelo</Label>
+              <Input
+                id="veiculoModelo"
+                placeholder="Ex: Honda Biz 125"
+                value={veiculoModelo}
+                onChange={e => setVeiculoModelo(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="veiculoAno">Ano</Label>
+              <Input
+                id="veiculoAno"
+                placeholder="Ex: 2021"
+                value={veiculoAno}
+                onChange={e => setVeiculoAno(e.target.value)}
+                maxLength={4}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-slate-700">Calibrar veículo para IA</p>
+                <p className="text-xs text-muted-foreground">
+                  Calcula o custo real por km do seu veículo. Feito uma única vez — só refaça se trocar de veículo.
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="shrink-0 border-blue-300 text-blue-700 hover:bg-blue-100"
+                onClick={handleCalibrarVeiculo}
+                disabled={calibrando || !veiculoTipo || !veiculoCombustivel}
+              >
+                {calibrando
+                  ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Calculando...</>
+                  : <><Cpu className="mr-1.5 h-4 w-4" />Calibrar</>}
+              </Button>
+            </div>
+            {calibracaoResumo && (
+              <div className="flex items-start gap-2 text-xs text-green-700 bg-green-50 rounded-md p-2 border border-green-200">
+                <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                <span>{calibracaoResumo}</span>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

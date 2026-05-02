@@ -25,6 +25,9 @@ const deslocamentoBodySchema = z.object({
   distanciaKm: z.number().finite().nonnegative().max(10000).nullable().optional(),
   veiculoTipo: z.string().trim().max(50).optional(),
   veiculoCombustivel: z.string().trim().max(50).optional(),
+  veiculoModelo: z.string().trim().max(100).optional(),
+  veiculoAno: z.string().trim().max(10).optional(),
+  veiculoCustoKm: z.number().finite().nonnegative().max(100).optional(),
 });
 
 const deslocamentoResponseSchema = z.object({
@@ -111,11 +114,16 @@ router.post("/sugestao-deslocamento", requireAuth, async (req, res) => {
     return;
   }
 
-  const { enderecoTecnico, enderecoCliente, distanciaKm, veiculoTipo, veiculoCombustivel } = parsed.data;
+  const { enderecoTecnico, enderecoCliente, distanciaKm, veiculoTipo, veiculoCombustivel, veiculoModelo, veiculoAno, veiculoCustoKm } = parsed.data;
 
-  const veiculoInfo = veiculoTipo || veiculoCombustivel
-    ? `- Veículo do técnico: ${[veiculoTipo, veiculoCombustivel].filter(Boolean).join(", ")}`
+  const veiculoDesc = [veiculoTipo, veiculoModelo, veiculoAno, veiculoCombustivel].filter(Boolean).join(", ");
+  const veiculoInfo = veiculoDesc
+    ? `- Veículo do técnico: ${veiculoDesc}`
     : `- Veículo: não informado (use consumo médio de carro a gasolina ~10 km/litro)`;
+
+  const custoKmInfo = veiculoCustoKm
+    ? `- Custo calibrado do veículo (calculado previamente): R$ ${veiculoCustoKm.toFixed(2)}/km — USE ESTE VALOR como base do custo de combustível por km, não estime por conta própria`
+    : "";
 
   const combustivelInfo = veiculoCombustivel?.toLowerCase().includes("eletric")
     ? "- Veículo elétrico: considere custo de energia elétrica (~R$ 0,80/kWh) e consumo médio de 6 km/kWh"
@@ -139,8 +147,9 @@ router.post("/sugestao-deslocamento", requireAuth, async (req, res) => {
 - Endereço do cliente (destino): ${enderecoCliente}
 ${typeof distanciaKm === "number" ? `- Distância informada: ${distanciaKm} km (ida)` : "- Distância não informada (estime com base nos endereços)"}
 ${veiculoInfo}
-${combustivelInfo}
-${consumoInfo}
+${custoKmInfo}
+${custoKmInfo ? "" : combustivelInfo}
+${custoKmInfo ? "" : consumoInfo}
 - Tempo do técnico (deslocamento ida e volta)
 - Pedágios típicos da região (se aplicável)
 - Práticas comuns do mercado de assistência técnica
@@ -196,6 +205,87 @@ Responda APENAS com este JSON (sem texto fora do JSON, sem markdown):
   } catch (err) {
     req.log.error({ err }, "Erro ao consultar IA para sugestão de deslocamento");
     res.status(500).json({ error: "Erro ao gerar sugestão de deslocamento" });
+  }
+});
+
+const calibrarVeiculoBodySchema = z.object({
+  veiculoTipo: z.string().trim().min(1).max(50),
+  veiculoCombustivel: z.string().trim().min(1).max(50),
+  veiculoModelo: z.string().trim().max(100).optional(),
+  veiculoAno: z.string().trim().max(10).optional(),
+});
+
+const calibrarVeiculoResponseSchema = z.object({
+  consumoKmL: z.number().finite().positive(),
+  precoCombustivelL: z.number().finite().positive(),
+  custoKm: z.number().finite().positive(),
+  resumo: z.string().min(1),
+});
+
+router.post("/calibrar-veiculo", requireAuth, async (req, res) => {
+  const parsed = calibrarVeiculoBodySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Dados inválidos", details: parsed.error.issues });
+    return;
+  }
+
+  const { veiculoTipo, veiculoCombustivel, veiculoModelo, veiculoAno } = parsed.data;
+  const desc = [veiculoTipo, veiculoModelo, veiculoAno, veiculoCombustivel].filter(Boolean).join(", ");
+
+  const prompt = `Estime o consumo real médio de combustível e o custo por km rodado para o seguinte veículo usado no Brasil:
+
+Veículo: ${desc}
+
+Considere:
+- Consumo real (não o oficial de fábrica) em km/litro ou km/kWh para elétrico
+- Preço médio atual do combustível no Brasil (${new Date().getFullYear()})
+- Calcule o custo por km = preço_combustivel / consumo
+
+Responda APENAS com este JSON (sem texto fora do JSON, sem markdown):
+{"consumoKmL": <consumo médio real em km/litro>, "precoCombustivelL": <preço médio em R$/litro>, "custoKm": <custo em R$/km com 3 casas decimais>, "resumo": "<1 frase: Ex: Honda Biz 125 flex consome ~35 km/L, etanol a R$4,10/L = R$0,12/km>"}`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-5-mini",
+      max_completion_tokens: 512,
+      messages: [
+        {
+          role: "system",
+          content: "Você é especialista em veículos e custos operacionais no Brasil. Responda SEMPRE em JSON válido, sem markdown.",
+        },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const content = response.choices[0]?.message?.content ?? "";
+    if (!content) {
+      res.status(500).json({ error: "A IA não retornou dados. Tente novamente." });
+      return;
+    }
+
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      res.status(500).json({ error: "Resposta da IA em formato inválido" });
+      return;
+    }
+
+    const raw = JSON.parse(jsonMatch[0]);
+    const normalized = {
+      consumoKmL: Number(raw.consumoKmL),
+      precoCombustivelL: Number(raw.precoCombustivelL),
+      custoKm: Number(raw.custoKm),
+      resumo: String(raw.resumo ?? ""),
+    };
+    const validated = calibrarVeiculoResponseSchema.safeParse(normalized);
+    if (!validated.success) {
+      res.status(500).json({ error: "Resposta da IA em formato inválido" });
+      return;
+    }
+    res.json(validated.data);
+  } catch (err) {
+    req.log.error({ err }, "Erro ao calibrar veículo");
+    res.status(500).json({ error: "Erro ao calibrar veículo" });
   }
 });
 

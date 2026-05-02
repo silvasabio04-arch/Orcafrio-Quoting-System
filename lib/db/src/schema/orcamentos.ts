@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, numeric, integer, pgEnum, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, numeric, integer, pgEnum, uniqueIndex, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { clientesTable } from "./clientes";
@@ -39,6 +39,11 @@ export const orcamentosTable = pgTable("orcamentos", {
   equipamentoTipo: text("equipamento_tipo"),
   equipamentoModelo: text("equipamento_modelo"),
   equipamentoCapacidade: text("equipamento_capacidade"),
+  aprovacaoToken: text("aprovacao_token"),
+  respostaCliente: text("resposta_cliente"),
+  comentarioCliente: text("comentario_cliente"),
+  respostaAt: timestamp("resposta_at"),
+  respostaLida: boolean("resposta_lida").default(false),
   total: numeric("total", { precision: 10, scale: 2 }).notNull().default("0"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

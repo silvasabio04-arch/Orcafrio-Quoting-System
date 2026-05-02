@@ -207,7 +207,12 @@ export default function OrcamentoDetalhes() {
           zIndex: -1,
         }}
       >
-        <OrcamentoPdf ref={pdfRef} orcamento={orcamento} tecnico={tecnico} />
+        <OrcamentoPdf
+          ref={pdfRef}
+          orcamento={orcamento}
+          tecnico={tecnico}
+          aprovacaoUrl={orcamento.aprovacaoToken ? `${window.location.origin}/aprovacao/${orcamento.aprovacaoToken}` : undefined}
+        />
       </div>
 
       <div className="space-y-6 pb-24 print:pb-0">

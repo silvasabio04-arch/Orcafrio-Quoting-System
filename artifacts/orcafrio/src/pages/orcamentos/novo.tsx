@@ -137,7 +137,7 @@ export default function OrcamentoNovo() {
     if (!enderecoTecnico.trim()) {
       toast({
         title: "Informe seu endereço",
-        description: "Preencha o endereço de origem (técnico) para calcular o deslocamento.",
+        description: "Preencha o endereço de origem (técnico) para calcular a taxa de visita técnica.",
         variant: "destructive",
       });
       return;
@@ -166,6 +166,9 @@ export default function OrcamentoNovo() {
           distanciaKm: distanciaParsed !== null && Number.isFinite(distanciaParsed) ? distanciaParsed : null,
           veiculoTipo: window.localStorage.getItem("orcafrio:veiculoTipo") || undefined,
           veiculoCombustivel: window.localStorage.getItem("orcafrio:veiculoCombustivel") || undefined,
+          veiculoModelo: window.localStorage.getItem("orcafrio:veiculoModelo") || undefined,
+          veiculoAno: window.localStorage.getItem("orcafrio:veiculoAno") || undefined,
+          veiculoCustoKm: window.localStorage.getItem("orcafrio:veiculoCustoKm") ? Number(window.localStorage.getItem("orcafrio:veiculoCustoKm")) : undefined,
         }),
       });
 
@@ -175,8 +178,8 @@ export default function OrcamentoNovo() {
       setSugestaoDeslocamento(data);
     } catch {
       toast({
-        title: "Erro ao calcular deslocamento",
-        description: "Não foi possível obter a estimativa de deslocamento. Tente novamente.",
+        title: "Erro ao calcular taxa de visita",
+        description: "Não foi possível obter a estimativa. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -190,13 +193,13 @@ export default function OrcamentoNovo() {
       : "ida e volta";
     append({
       categoria: "outros",
-      descricao: `Taxa de deslocamento (${distancia})`,
+      descricao: `Taxa de visita técnica (${distancia})`,
       quantidade: 1,
       precoUnitario: valor,
     });
     setSugestaoDeslocamento(null);
     toast({
-      title: "Deslocamento adicionado",
+      title: "Taxa de visita adicionada",
       description: `Taxa de ${formatCurrency(valor)} adicionada aos itens do orçamento.`,
     });
   };
@@ -381,7 +384,7 @@ export default function OrcamentoNovo() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Car className="h-5 w-5 text-blue-600" />
-                <CardTitle>Taxa de Deslocamento</CardTitle>
+                <CardTitle>Taxa de Visita Técnica</CardTitle>
               </div>
               <CardDescription>
                 Informe seu endereço de partida e a IA estima o valor justo a cobrar pela viagem até o cliente
@@ -439,14 +442,14 @@ export default function OrcamentoNovo() {
                 className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Sparkles className="mr-2 h-4 w-4" />
-                {loadingDeslocamento ? "Calculando..." : "Calcular Taxa de Deslocamento (IA)"}
+                {loadingDeslocamento ? "Calculando..." : "Calcular Taxa de Visita Técnica (IA)"}
               </Button>
 
               {sugestaoDeslocamento && (
                 <div className="border border-blue-200 bg-blue-50 rounded-lg p-4 space-y-3">
                   <div className="flex items-center gap-2 text-blue-700 font-medium text-sm">
                     <TrendingUp className="h-4 w-4" />
-                    Estimativa de Taxa de Deslocamento
+                    Estimativa de Taxa de Visita Técnica
                     {sugestaoDeslocamento.distanciaEstimadaKm > 0 && (
                       <span className="text-xs font-normal text-blue-600 ml-auto">
                         ~ {sugestaoDeslocamento.distanciaEstimadaKm} km (ida)

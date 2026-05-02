@@ -1,10 +1,44 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Users, FileText, Menu, Settings, LogOut, Clock } from "lucide-react";
+import { Home, Users, FileText, Menu, Settings, LogOut, Clock, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useClerk, useUser } from "@clerk/react";
 import { useTrialStatus } from "@/lib/use-trial";
+
+function NotificationBell() {
+  const [unread, setUnread] = useState(0);
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    const load = () => {
+      fetch("/api/notificacoes")
+        .then(r => r.ok ? r.json() : [])
+        .then((items: { respostaLida: boolean }[]) => {
+          setUnread(items.filter(i => !i.respostaLida).length);
+        })
+        .catch(() => {});
+    };
+    load();
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <button
+      onClick={() => setLocation("/notificacoes")}
+      className="relative p-2 rounded-md hover:bg-muted transition-colors"
+      aria-label="Notificações"
+    >
+      <Bell className="h-5 w-5 text-muted-foreground" />
+      {unread > 0 && (
+        <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+          {unread > 9 ? "9+" : unread}
+        </span>
+      )}
+    </button>
+  );
+}
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -65,6 +99,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <span className="sr-only">Abrir menu</span>
             </Button>
           </SheetTrigger>
+
           <SheetContent side="left" className="max-w-xs flex flex-col">
             <nav className="grid gap-6 text-lg font-medium flex-1">
               <div className="flex items-center gap-3 mb-4">
@@ -147,6 +182,7 @@ export function Layout({ children }: { children: ReactNode }) {
             />
             <span className="font-bold text-primary">Orcafrio</span>
           </Link>
+          <NotificationBell />
         </div>
       </header>
 
