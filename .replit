@@ -42,3 +42,4 @@ channel = "stable-25_05"
 
 [userenv.shared]
 VITE_CLERK_PUBLISHABLE_KEY = "pk_test_bWlnaHR5LXRldHJhLTg2LmNsZXJrLmFjY291bnRzLmRldiQ"
+HOTMART_CHECKOUT_URL = "https://silvasabio-04.hotmart.host/orcafrio-ia-pro-4fb8ecde-b411-4184-bbde-895ed709ed7a"
