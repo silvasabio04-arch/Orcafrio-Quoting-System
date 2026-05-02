@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Orcafrio"
+version = "1.0.0"
+id = "artifacts/orcafrio"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18902
+
+[services.development]
+run = "pnpm --filter @workspace/orcafrio run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/orcafrio", "run", "build" ]
+publicDir = "artifacts/orcafrio/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18902"
+BASE_PATH = "/"
