@@ -184,6 +184,14 @@ export const GetOrcamentoResponse = zod.object({
   garantia: zod.string().nullish(),
   condicoesPagamento: zod.string().nullish(),
   observacoes: zod.string().nullish(),
+  equipamentoTipo: zod.string().nullish(),
+  equipamentoModelo: zod.string().nullish(),
+  equipamentoCapacidade: zod.string().nullish(),
+  aprovacaoToken: zod.string().nullish(),
+  respostaCliente: zod.string().nullish(),
+  comentarioCliente: zod.string().nullish(),
+  respostaAt: zod.string().nullish(),
+  respostaLida: zod.boolean().nullish(),
   total: zod.number(),
   itens: zod.array(
     zod.object({
@@ -273,6 +281,14 @@ export const UpdateOrcamentoResponse = zod.object({
   garantia: zod.string().nullish(),
   condicoesPagamento: zod.string().nullish(),
   observacoes: zod.string().nullish(),
+  equipamentoTipo: zod.string().nullish(),
+  equipamentoModelo: zod.string().nullish(),
+  equipamentoCapacidade: zod.string().nullish(),
+  aprovacaoToken: zod.string().nullish(),
+  respostaCliente: zod.string().nullish(),
+  comentarioCliente: zod.string().nullish(),
+  respostaAt: zod.string().nullish(),
+  respostaLida: zod.boolean().nullish(),
   total: zod.number(),
   itens: zod.array(
     zod.object({
@@ -350,6 +366,14 @@ export const UpdateOrcamentoStatusResponse = zod.object({
   garantia: zod.string().nullish(),
   condicoesPagamento: zod.string().nullish(),
   observacoes: zod.string().nullish(),
+  equipamentoTipo: zod.string().nullish(),
+  equipamentoModelo: zod.string().nullish(),
+  equipamentoCapacidade: zod.string().nullish(),
+  aprovacaoToken: zod.string().nullish(),
+  respostaCliente: zod.string().nullish(),
+  comentarioCliente: zod.string().nullish(),
+  respostaAt: zod.string().nullish(),
+  respostaLida: zod.boolean().nullish(),
   total: zod.number(),
   itens: zod.array(
     zod.object({

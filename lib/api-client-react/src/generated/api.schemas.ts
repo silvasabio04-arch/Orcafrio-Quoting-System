@@ -96,6 +96,14 @@ export interface Orcamento {
   garantia?: string | null;
   condicoesPagamento?: string | null;
   observacoes?: string | null;
+  equipamentoTipo?: string | null;
+  equipamentoModelo?: string | null;
+  equipamentoCapacidade?: string | null;
+  aprovacaoToken?: string | null;
+  respostaCliente?: string | null;
+  comentarioCliente?: string | null;
+  respostaAt?: string | null;
+  respostaLida?: boolean | null;
   total: number;
   itens: ItemOrcamento[];
   createdAt: string;

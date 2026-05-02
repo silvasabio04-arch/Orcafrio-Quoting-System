@@ -481,6 +481,30 @@ components:
         observacoes:
           type: string
           nullable: true
+        equipamentoTipo:
+          type: string
+          nullable: true
+        equipamentoModelo:
+          type: string
+          nullable: true
+        equipamentoCapacidade:
+          type: string
+          nullable: true
+        aprovacaoToken:
+          type: string
+          nullable: true
+        respostaCliente:
+          type: string
+          nullable: true
+        comentarioCliente:
+          type: string
+          nullable: true
+        respostaAt:
+          type: string
+          nullable: true
+        respostaLida:
+          type: boolean
+          nullable: true
         total:
           type: number
         itens:
