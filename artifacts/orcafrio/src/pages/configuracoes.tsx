@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { SignaturePad, type SignaturePadHandle } from "@/components/signature-pad";
 import { saveTecnicoProfile, useTecnicoProfile } from "@/lib/tecnico";
@@ -17,6 +18,8 @@ export default function Configuracoes() {
   const [nome, setNome] = useState(profile.nome);
   const [endereco, setEndereco] = useState(profile.endereco);
   const [registroTecnico, setRegistroTecnico] = useState(profile.registroTecnico);
+  const [veiculoTipo, setVeiculoTipo] = useState(profile.veiculoTipo);
+  const [veiculoCombustivel, setVeiculoCombustivel] = useState(profile.veiculoCombustivel);
   const [hasSignature, setHasSignature] = useState(!!profile.assinatura);
 
   const handleClearSignature = () => {
@@ -35,6 +38,8 @@ export default function Configuracoes() {
       nome: nome.trim(),
       endereco: endereco.trim(),
       registroTecnico: registroTecnico.trim(),
+      veiculoTipo,
+      veiculoCombustivel,
       assinatura,
     });
     toast({ title: "Configurações salvas no aparelho" });
@@ -103,6 +108,41 @@ export default function Configuracoes() {
               Aparece abaixo do seu nome no rodapé do orçamento (PDF)
             </p>
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Tipo de Veículo</Label>
+              <Select value={veiculoTipo} onValueChange={setVeiculoTipo}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Moto">Moto</SelectItem>
+                  <SelectItem value="Carro">Carro</SelectItem>
+                  <SelectItem value="Van/Kombi">Van / Kombi</SelectItem>
+                  <SelectItem value="Caminhonete/Pickup">Caminhonete / Pickup</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Combustível</Label>
+              <Select value={veiculoCombustivel} onValueChange={setVeiculoCombustivel}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Gasolina">Gasolina</SelectItem>
+                  <SelectItem value="Etanol">Etanol</SelectItem>
+                  <SelectItem value="Flex">Flex</SelectItem>
+                  <SelectItem value="Diesel">Diesel</SelectItem>
+                  <SelectItem value="Elétrico">Elétrico</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Usado pela IA para calcular o deslocamento com mais precisão
+          </p>
         </CardContent>
       </Card>
 

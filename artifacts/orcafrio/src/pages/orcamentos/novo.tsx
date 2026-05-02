@@ -164,6 +164,8 @@ export default function OrcamentoNovo() {
           enderecoTecnico: enderecoTecnico.trim(),
           enderecoCliente: clienteSelecionado.endereco,
           distanciaKm: distanciaParsed !== null && Number.isFinite(distanciaParsed) ? distanciaParsed : null,
+          veiculoTipo: window.localStorage.getItem("orcafrio:veiculoTipo") || undefined,
+          veiculoCombustivel: window.localStorage.getItem("orcafrio:veiculoCombustivel") || undefined,
         }),
       });
 

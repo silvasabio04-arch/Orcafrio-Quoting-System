@@ -23,6 +23,8 @@ const deslocamentoBodySchema = z.object({
   enderecoTecnico: z.string().trim().min(1).max(300),
   enderecoCliente: z.string().trim().min(1).max(300),
   distanciaKm: z.number().finite().nonnegative().max(10000).nullable().optional(),
+  veiculoTipo: z.string().trim().max(50).optional(),
+  veiculoCombustivel: z.string().trim().max(50).optional(),
 });
 
 const deslocamentoResponseSchema = z.object({
@@ -109,23 +111,42 @@ router.post("/sugestao-deslocamento", requireAuth, async (req, res) => {
     return;
   }
 
-  const { enderecoTecnico, enderecoCliente, distanciaKm } = parsed.data;
+  const { enderecoTecnico, enderecoCliente, distanciaKm, veiculoTipo, veiculoCombustivel } = parsed.data;
+
+  const veiculoInfo = veiculoTipo || veiculoCombustivel
+    ? `- Veículo do técnico: ${[veiculoTipo, veiculoCombustivel].filter(Boolean).join(", ")}`
+    : `- Veículo: não informado (use consumo médio de carro a gasolina ~10 km/litro)`;
+
+  const combustivelInfo = veiculoCombustivel?.toLowerCase().includes("eletric")
+    ? "- Veículo elétrico: considere custo de energia elétrica (~R$ 0,80/kWh) e consumo médio de 6 km/kWh"
+    : veiculoCombustivel?.toLowerCase().includes("diesel")
+    ? "- Combustível diesel: preço médio ~R$ 6,20/litro"
+    : veiculoCombustivel?.toLowerCase().includes("etanol")
+    ? "- Combustível etanol: preço médio ~R$ 4,00/litro, consumo ~30% maior que gasolina"
+    : "- Combustível gasolina/flex: preço médio ~R$ 6,00/litro";
+
+  const consumoInfo = veiculoTipo?.toLowerCase().includes("moto")
+    ? "- Consumo médio de moto: ~25 km/litro"
+    : veiculoTipo?.toLowerCase().includes("van") || veiculoTipo?.toLowerCase().includes("kombi")
+    ? "- Consumo médio de van/kombi: ~8 km/litro"
+    : veiculoTipo?.toLowerCase().includes("caminhonete") || veiculoTipo?.toLowerCase().includes("pickup")
+    ? "- Consumo médio de caminhonete/pickup: ~8 km/litro"
+    : "- Consumo médio de carro: ~10 km/litro";
 
   const prompt = `Estime o valor justo a cobrar de TAXA DE DESLOCAMENTO para um técnico de refrigeração/ar-condicionado no Brasil, considerando:
 
 - Endereço do técnico (origem): ${enderecoTecnico}
 - Endereço do cliente (destino): ${enderecoCliente}
 ${typeof distanciaKm === "number" ? `- Distância informada: ${distanciaKm} km (ida)` : "- Distância não informada (estime com base nos endereços)"}
-
-Considere:
-- Preço médio da gasolina no Brasil (~R$ 6,00/litro)
-- Consumo médio de veículo (~10 km/litro)
+${veiculoInfo}
+${combustivelInfo}
+${consumoInfo}
 - Tempo do técnico (deslocamento ida e volta)
 - Pedágios típicos da região (se aplicável)
-- Praticas comuns do mercado de assistência técnica
+- Práticas comuns do mercado de assistência técnica
 
 Responda APENAS com este JSON (sem texto fora do JSON, sem markdown):
-{"distanciaEstimadaKm": <número estimado em km, ida apenas>, "taxaMinima": <número em reais>, "taxaMaxima": <número em reais>, "taxaSugerida": <número em reais, valor médio recomendado>, "justificativa": "<1-2 frases explicando como chegou ao valor, citando km e custos>"}`;
+{"distanciaEstimadaKm": <número estimado em km, ida apenas>, "taxaMinima": <número em reais>, "taxaMaxima": <número em reais>, "taxaSugerida": <número em reais, valor médio recomendado>, "justificativa": "<1-2 frases explicando como chegou ao valor, citando km, veículo e custos>"}`;
 
   try {
     const response = await openai.chat.completions.create({
