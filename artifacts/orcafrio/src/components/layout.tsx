@@ -25,13 +25,16 @@ export function Layout({ children }: { children: ReactNode }) {
           </SheetTrigger>
           <SheetContent side="left" className="sm:max-w-xs flex flex-col">
             <nav className="grid gap-6 text-lg font-medium flex-1">
-              <div className="flex items-center gap-3 text-primary font-bold text-xl mb-4">
+              <div className="flex items-center gap-3 mb-4">
                 <img
                   src="/logo.jpg"
                   alt="Orcafrio"
                   className="h-10 w-10 rounded-lg object-cover shadow-sm"
                 />
-                Orcafrio
+                <div className="flex flex-col leading-tight">
+                  <span className="text-primary font-bold text-xl">Orcafrio</span>
+                  <span className="text-xs text-muted-foreground font-normal">Orçamento Inteligente</span>
+                </div>
               </div>
               {navItems.map((item) => (
                 <Link

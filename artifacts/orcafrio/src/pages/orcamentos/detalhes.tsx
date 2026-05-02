@@ -206,7 +206,7 @@ export default function OrcamentoDetalhes() {
             />
             <div>
               <h1 className="text-3xl font-bold text-primary">ORCAFRIO</h1>
-              <p className="text-sm text-gray-500 mt-1">Orçamento de Serviços</p>
+              <p className="text-sm text-gray-500 mt-1">Orçamento Inteligente</p>
             </div>
           </div>
           <div className="text-right">
