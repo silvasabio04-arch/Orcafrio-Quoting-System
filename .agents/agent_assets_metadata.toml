@@ -6,8 +6,20 @@ uri = "file://attached_assets/generated_images/orcafrio-marketing-ia.png"
 type = "image"
 title = "orcafrio marketing banner AI price"
 
+[[generated]]
+id = "qQl3HP8wel0QlZzjdc1wz"
+uri = "file://attached_assets/generated_images/orcafrio-marketing-600x600.png"
+type = "image"
+title = "orcafrio marketing square 600x600"
+
 [[outputs]]
 id = "7NTi0pNdsdLGHbY8gZh88"
 uri = "file://attached_assets/generated_images/orcafrio-marketing-ia.png"
 type = "image"
 title = "Orcafrio — Banner Sugestão de Preço com IA"
+
+[[outputs]]
+id = "kw74j8bzELgPo579K6v-f"
+uri = "file://attached_assets/generated_images/orcafrio-marketing-600x600.png"
+type = "image"
+title = "Orcafrio — Imagem do Produto (600x600 PNG)"
