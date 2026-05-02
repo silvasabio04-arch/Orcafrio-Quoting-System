@@ -2,7 +2,8 @@ import { useLocation } from "wouter";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Trash2, ArrowLeft, Save } from "lucide-react";
+import { useState } from "react";
+import { Plus, Trash2, ArrowLeft, Save, Sparkles, TrendingUp } from "lucide-react";
 import { useListClientes, useCreateOrcamento, getListOrcamentosQueryKey, getGetDashboardResumoQueryKey, getGetOrcamentosRecentesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -35,10 +36,32 @@ const orcamentoSchema = z.object({
 
 type OrcamentoFormValues = z.infer<typeof orcamentoSchema>;
 
+interface SugestaoPrecо {
+  precoMinimo: number;
+  precoMaximo: number;
+  precoSugerido: number;
+  justificativa: string;
+}
+
+const CATEGORIA_LABELS: Record<string, string> = {
+  manutencao_preventiva: "Manutenção Preventiva",
+  higienizacao: "Higienização",
+  instalacao: "Instalação",
+  troca_compressor: "Troca de Compressor",
+  carga_gas: "Carga de Gás",
+  diagnostico: "Diagnóstico",
+  conserto: "Conserto",
+  mao_de_obra: "Mão de Obra",
+  outros: "Outros",
+};
+
 export default function OrcamentoNovo() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const [sugestoes, setSugestoes] = useState<Record<number, SugestaoPrecо>>({});
+  const [loadingSugestao, setLoadingSugestao] = useState<Record<number, boolean>>({});
 
   const { data: clientes, isLoading: isLoadingClientes } = useListClientes();
   const createOrcamento = useCreateOrcamento();
@@ -70,6 +93,58 @@ export default function OrcamentoNovo() {
 
   const watchedItens = form.watch("itens");
   const totalGeral = watchedItens.reduce((acc, item) => acc + (item.quantidade || 0) * (item.precoUnitario || 0), 0);
+
+  const buscarSugestao = async (index: number) => {
+    const item = watchedItens[index];
+    if (!item?.descricao?.trim()) {
+      toast({
+        title: "Preencha a descrição",
+        description: "Descreva o serviço para receber uma estimativa de preço.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoadingSugestao((prev) => ({ ...prev, [index]: true }));
+    setSugestoes((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+
+    try {
+      const response = await fetch("/api/sugestao-preco", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          descricao: item.descricao,
+          categoria: CATEGORIA_LABELS[item.categoria] ?? item.categoria,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Erro na resposta da API");
+
+      const data: SugestaoPrecо = await response.json();
+      setSugestoes((prev) => ({ ...prev, [index]: data }));
+    } catch {
+      toast({
+        title: "Erro ao buscar sugestão",
+        description: "Não foi possível obter a estimativa de preço. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingSugestao((prev) => ({ ...prev, [index]: false }));
+    }
+  };
+
+  const aplicarSugestao = (index: number, preco: number) => {
+    form.setValue(`itens.${index}.precoUnitario`, preco);
+    setSugestoes((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+  };
 
   const onSubmit = (data: OrcamentoFormValues) => {
     createOrcamento.mutate(
@@ -160,6 +235,8 @@ export default function OrcamentoNovo() {
                 const quantidade = watchedItens[index]?.quantidade || 0;
                 const preco = watchedItens[index]?.precoUnitario || 0;
                 const subtotal = quantidade * preco;
+                const sugestao = sugestoes[index];
+                const carregando = loadingSugestao[index] ?? false;
 
                 return (
                   <div key={field.id} className="relative p-4 pt-6 border rounded-lg bg-muted/20 space-y-4">
@@ -174,7 +251,7 @@ export default function OrcamentoNovo() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
-                    
+
                     <div className="grid gap-4 sm:grid-cols-2">
                       <FormField
                         control={form.control}
@@ -204,7 +281,7 @@ export default function OrcamentoNovo() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name={`itens.${index}.descricao`}
@@ -219,7 +296,7 @@ export default function OrcamentoNovo() {
                         )}
                       />
                     </div>
-                    
+
                     <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 items-end">
                       <FormField
                         control={form.control}
@@ -234,13 +311,26 @@ export default function OrcamentoNovo() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name={`itens.${index}.precoUnitario`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Preço Unitário (R$)</FormLabel>
+                            <div className="flex items-center justify-between gap-1 mb-1">
+                              <FormLabel className="mb-0">Preço Unitário (R$)</FormLabel>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs text-violet-600 hover:text-violet-700 hover:bg-violet-50 gap-1"
+                                onClick={() => buscarSugestao(index)}
+                                disabled={carregando}
+                              >
+                                <Sparkles className="h-3 w-3" />
+                                {carregando ? "Consultando..." : "Sugerir IA"}
+                              </Button>
+                            </div>
                             <FormControl>
                               <Input type="number" step="0.01" min="0" {...field} className="h-12 sm:h-10 text-base sm:text-sm bg-background" />
                             </FormControl>
@@ -248,16 +338,68 @@ export default function OrcamentoNovo() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <div className="col-span-2 sm:col-span-1 p-3 bg-primary/10 rounded-md text-right">
                         <span className="text-xs text-muted-foreground block mb-1">Subtotal</span>
                         <span className="font-bold text-primary">{formatCurrency(subtotal)}</span>
                       </div>
                     </div>
+
+                    {sugestao && (
+                      <div className="border border-violet-200 bg-violet-50 rounded-lg p-4 space-y-3">
+                        <div className="flex items-center gap-2 text-violet-700 font-medium text-sm">
+                          <TrendingUp className="h-4 w-4" />
+                          Estimativa de Mercado (IA)
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div className="bg-white rounded-md p-2 border border-violet-100">
+                            <span className="text-xs text-muted-foreground block">Mínimo</span>
+                            <span className="font-semibold text-sm">{formatCurrency(sugestao.precoMinimo)}</span>
+                          </div>
+                          <div className="bg-violet-600 rounded-md p-2 text-white relative">
+                            <span className="text-xs opacity-80 block">Sugerido</span>
+                            <span className="font-bold text-sm">{formatCurrency(sugestao.precoSugerido)}</span>
+                          </div>
+                          <div className="bg-white rounded-md p-2 border border-violet-100">
+                            <span className="text-xs text-muted-foreground block">Máximo</span>
+                            <span className="font-semibold text-sm">{formatCurrency(sugestao.precoMaximo)}</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground italic">{sugestao.justificativa}</p>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="bg-violet-600 hover:bg-violet-700 text-white h-8 text-xs"
+                            onClick={() => aplicarSugestao(index, sugestao.precoSugerido)}
+                          >
+                            Usar valor sugerido ({formatCurrency(sugestao.precoSugerido)})
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs border-violet-200 text-violet-700"
+                            onClick={() => aplicarSugestao(index, sugestao.precoMinimo)}
+                          >
+                            Usar mínimo
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-xs border-violet-200 text-violet-700"
+                            onClick={() => aplicarSugestao(index, sugestao.precoMaximo)}
+                          >
+                            Usar máximo
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
-              
+
               <Button
                 type="button"
                 variant="outline"
@@ -344,7 +486,6 @@ export default function OrcamentoNovo() {
             </CardContent>
           </Card>
 
-          {/* Sticky bottom bar for save action */}
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t shadow-[0_-4px_10px_-10px_rgba(0,0,0,0.1)] z-40 sm:sticky sm:bottom-0 sm:rounded-b-lg sm:p-0 sm:border-0 sm:shadow-none sm:bg-transparent sm:mt-8">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card sm:p-6 sm:border sm:rounded-lg max-w-5xl mx-auto">
               <div className="flex flex-col items-center sm:items-start w-full sm:w-auto">
