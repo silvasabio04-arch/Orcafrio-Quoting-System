@@ -34,12 +34,17 @@ async function calcularTotal(orcamentoId: number): Promise<number> {
 }
 
 async function gerarNumero(userId: string): Promise<string> {
-  const [result] = await db
-    .select({ count: sql<number>`count(*)` })
+  const rows = await db
+    .select({ numero: orcamentosTable.numero })
     .from(orcamentosTable)
     .where(eq(orcamentosTable.userId, userId));
-  const count = Number(result?.count ?? 0) + 1;
-  return `ORC-${String(count).padStart(3, "0")}`;
+
+  let maxNum = 0;
+  for (const row of rows) {
+    const match = row.numero.match(/^ORC-(\d+)$/);
+    if (match) maxNum = Math.max(maxNum, parseInt(match[1]));
+  }
+  return `ORC-${String(maxNum + 1).padStart(3, "0")}`;
 }
 
 router.get("/orcamentos", requireAuth, async (req, res) => {
