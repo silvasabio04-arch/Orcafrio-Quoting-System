@@ -59,7 +59,7 @@ Responda APENAS com este JSON (sem texto fora do JSON, sem markdown):
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 8192,
       messages: [
         {
@@ -159,7 +159,7 @@ Responda APENAS com este JSON (sem texto fora do JSON, sem markdown):
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 8192,
       messages: [
         {
@@ -246,7 +246,7 @@ Responda APENAS com este JSON (sem texto fora do JSON, sem markdown):
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       max_completion_tokens: 512,
       messages: [
         {
