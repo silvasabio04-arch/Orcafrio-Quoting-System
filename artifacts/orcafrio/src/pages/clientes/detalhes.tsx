@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
-import { useGetCliente, useDeleteCliente, useListOrcamentos } from "@workspace/api-client-react";
-import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, Trash2, FileText, Download, Loader2, ExternalLink } from "lucide-react";
+import { useGetCliente, useDeleteCliente, useListOrcamentos, useUpdateCliente, getGetClienteQueryKey, getListClientesQueryKey } from "@workspace/api-client-react";
+import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, Trash2, FileText, Download, Loader2, ExternalLink, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,11 @@ import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { getStatusColor, getStatusLabel } from "@/pages/dashboard";
 import { useTecnicoProfile } from "@/lib/tecnico";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ClienteDetalhes() {
   const { id } = useParams();
@@ -18,6 +23,9 @@ export default function ClienteDetalhes() {
   const tecnico = useTecnicoProfile();
   const exportRef = useRef<HTMLDivElement>(null);
   const [exportando, setExportando] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ nome: "", telefone: "", email: "", endereco: "", cpfCnpj: "" });
+  const queryClient = useQueryClient();
 
   const { data: cliente, isLoading } = useGetCliente(Number(id), {
     query: { enabled: !!id },
@@ -29,6 +37,7 @@ export default function ClienteDetalhes() {
   );
 
   const deleteCliente = useDeleteCliente();
+  const updateCliente = useUpdateCliente();
 
   const handleDelete = () => {
     if (confirm("Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.")) {
@@ -49,6 +58,48 @@ export default function ClienteDetalhes() {
         }
       );
     }
+  };
+
+  const handleOpenEdit = () => {
+    if (!cliente) return;
+    setEditForm({
+      nome: cliente.nome ?? "",
+      telefone: cliente.telefone ?? "",
+      email: cliente.email ?? "",
+      endereco: cliente.endereco ?? "",
+      cpfCnpj: cliente.cpfCnpj ?? "",
+    });
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editForm.nome.trim() || !editForm.telefone.trim()) {
+      toast({ title: "Nome e telefone são obrigatórios", variant: "destructive" });
+      return;
+    }
+    updateCliente.mutate(
+      {
+        id: Number(id),
+        data: {
+          nome: editForm.nome.trim(),
+          telefone: editForm.telefone.trim(),
+          email: editForm.email.trim() || undefined,
+          endereco: editForm.endereco.trim() || undefined,
+          cpfCnpj: editForm.cpfCnpj.trim() || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast({ title: "Cliente atualizado com sucesso!" });
+          setEditOpen(false);
+          queryClient.invalidateQueries({ queryKey: getGetClienteQueryKey(Number(id)) });
+          queryClient.invalidateQueries({ queryKey: getListClientesQueryKey() });
+        },
+        onError: () => {
+          toast({ title: "Erro ao atualizar cliente. Tente novamente.", variant: "destructive" });
+        },
+      }
+    );
   };
 
   const handleExportarPdf = async () => {
@@ -119,6 +170,9 @@ export default function ClienteDetalhes() {
             title="Exportar histórico de orçamentos"
           >
             {exportando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          </Button>
+          <Button variant="outline" size="icon" onClick={handleOpenEdit} title="Editar cliente">
+            <Pencil className="h-4 w-4" />
           </Button>
           <Button variant="destructive" size="icon" onClick={handleDelete}>
             <Trash2 className="h-4 w-4" />
@@ -261,6 +315,70 @@ export default function ClienteDetalhes() {
         </div>
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-nome">Nome *</Label>
+              <Input
+                id="edit-nome"
+                value={editForm.nome}
+                onChange={e => setEditForm(f => ({ ...f, nome: e.target.value }))}
+                placeholder="Nome completo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-telefone">Telefone *</Label>
+              <Input
+                id="edit-telefone"
+                value={editForm.telefone}
+                onChange={e => setEditForm(f => ({ ...f, telefone: e.target.value }))}
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">E-mail</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
+                placeholder="email@exemplo.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-endereco">Endereço</Label>
+              <Textarea
+                id="edit-endereco"
+                value={editForm.endereco}
+                onChange={e => setEditForm(f => ({ ...f, endereco: e.target.value }))}
+                placeholder="Rua, número - Bairro - Cidade/UF"
+                rows={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-cpfcnpj">CPF/CNPJ</Label>
+              <Input
+                id="edit-cpfcnpj"
+                value={editForm.cpfCnpj}
+                onChange={e => setEditForm(f => ({ ...f, cpfCnpj: e.target.value }))}
+                placeholder="000.000.000-00"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveEdit} disabled={updateCliente.isPending}>
+              {updateCliente.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</> : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Hidden export PDF template */}
       {!!orcamentos?.length && (
         <div
@@ -268,7 +386,6 @@ export default function ClienteDetalhes() {
           style={{ position: "fixed", top: 0, left: "-9999px", width: "794px", pointerEvents: "none", zIndex: -1 }}
         >
           <div ref={exportRef} style={{ fontFamily: "Arial, sans-serif", padding: "48px", background: "#fff", color: "#0f172a" }}>
-            {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px", paddingBottom: "20px", borderBottom: "2px solid #0f172a" }}>
               <div>
                 <div style={{ fontSize: "22px", fontWeight: 700, color: "#1d4ed8" }}>Orcafrio</div>
@@ -285,7 +402,6 @@ export default function ClienteDetalhes() {
               </div>
             </div>
 
-            {/* Stats summary */}
             <div style={{ display: "flex", gap: "16px", marginBottom: "28px" }}>
               {[
                 { label: "Total de Orçamentos", value: String(orcamentos.length), color: "#0f172a" },
@@ -299,7 +415,6 @@ export default function ClienteDetalhes() {
               ))}
             </div>
 
-            {/* Table */}
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
               <thead>
                 <tr style={{ background: "#0f172a", color: "#fff" }}>
@@ -337,7 +452,6 @@ export default function ClienteDetalhes() {
               </tfoot>
             </table>
 
-            {/* Footer */}
             <div style={{ marginTop: "32px", paddingTop: "12px", borderTop: "1px solid #e2e8f0", textAlign: "center", fontSize: "10px", color: "#94a3b8" }}>
               Documento gerado pelo sistema Orcafrio · Orçamento Inteligente
             </div>
