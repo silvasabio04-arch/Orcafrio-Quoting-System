@@ -141,7 +141,7 @@ router.post("/sugestao-deslocamento", requireAuth, async (req, res) => {
     ? "- Consumo médio de caminhonete/pickup: ~8 km/litro"
     : "- Consumo médio de carro: ~10 km/litro";
 
-  const prompt = `Estime o valor justo a cobrar de TAXA DE DESLOCAMENTO para um técnico de refrigeração/ar-condicionado no Brasil, considerando:
+  const prompt = `Estime o valor justo a cobrar de TAXA DE VISITA TÉCNICA para um técnico de refrigeração/ar-condicionado no Brasil, considerando:
 
 - Endereço do técnico (origem): ${enderecoTecnico}
 - Endereço do cliente (destino): ${enderecoCliente}
@@ -150,12 +150,14 @@ ${veiculoInfo}
 ${custoKmInfo}
 ${custoKmInfo ? "" : combustivelInfo}
 ${custoKmInfo ? "" : consumoInfo}
+- Custo de combustível para o trajeto (ida e volta): calcule com base no custo/km e distância
+- Valor médio cobrado por visita técnica de refrigeração/ar-condicionado na CIDADE/REGIÃO do cliente: pesquise a média de mercado local (considere o porte da cidade e região — capitais e grandes centros têm tarifa maior)
+- O valor final deve ser a SOMA do custo de combustível (ida+volta) + valor médio de visita técnica da região
 - Tempo do técnico (deslocamento ida e volta)
 - Pedágios típicos da região (se aplicável)
-- Práticas comuns do mercado de assistência técnica
 
 Responda APENAS com este JSON (sem texto fora do JSON, sem markdown):
-{"distanciaEstimadaKm": <número estimado em km, ida apenas>, "taxaMinima": <número em reais>, "taxaMaxima": <número em reais>, "taxaSugerida": <número em reais, valor médio recomendado>, "justificativa": "<1-2 frases explicando como chegou ao valor, citando km, veículo e custos>"}`;
+{"distanciaEstimadaKm": <número estimado em km, ida apenas>, "taxaMinima": <número em reais>, "taxaMaxima": <número em reais>, "taxaSugerida": <número em reais, valor médio recomendado — combustivel + media visita técnica da região>, "justificativa": "<2-3 frases: informe o custo de combustível calculado, a média de visita técnica na região e o total sugerido>"}`;
 
   try {
     const response = await openai.chat.completions.create({

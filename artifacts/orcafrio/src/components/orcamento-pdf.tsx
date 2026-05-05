@@ -52,11 +52,15 @@ interface OrcamentoPdfData {
 interface OrcamentoPdfProps {
   orcamento: OrcamentoPdfData;
   tecnico: TecnicoProfile;
-  aprovacaoUrl?: string;
 }
 
 export const OrcamentoPdf = forwardRef<HTMLDivElement, OrcamentoPdfProps>(
-  ({ orcamento, tecnico, aprovacaoUrl }, ref) => {
+  ({ orcamento, tecnico }, ref) => {
+    const nomeExibido = tecnico.empresa || tecnico.nome || "Técnico Responsável";
+    const identificador = tecnico.empresa
+      ? (tecnico.cnpj ? `CNPJ: ${tecnico.cnpj}` : "")
+      : (tecnico.nome ? "" : "");
+
     return (
       <div
         ref={ref}
@@ -72,31 +76,41 @@ export const OrcamentoPdf = forwardRef<HTMLDivElement, OrcamentoPdfProps>(
           boxSizing: "border-box",
         }}
       >
+        {/* Header: technician info on left, quote number on right */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "flex-start",
             paddingBottom: "16px",
             borderBottom: "2px solid #1d4ed8",
             marginBottom: "24px",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <img
-              src="/logo.jpg"
-              alt="Orcafrio"
-              crossOrigin="anonymous"
-              style={{ width: "56px", height: "56px", borderRadius: "8px", objectFit: "cover" }}
-            />
-            <div>
-              <div style={{ fontSize: "26px", fontWeight: 800, color: "#1d4ed8", letterSpacing: "0.5px" }}>
-                ORCAFRIO
-              </div>
-              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
-                Orçamento Inteligente
-              </div>
+          <div>
+            <div style={{ fontSize: "20px", fontWeight: 800, color: "#0f172a", letterSpacing: "0.3px" }}>
+              {nomeExibido}
             </div>
+            {identificador && (
+              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                {identificador}
+              </div>
+            )}
+            {tecnico.registroTecnico && (
+              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                {tecnico.registroTecnico}
+              </div>
+            )}
+            {tecnico.telefone && (
+              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                Tel: {tecnico.telefone}
+              </div>
+            )}
+            {tecnico.endereco && (
+              <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
+                {tecnico.endereco}
+              </div>
+            )}
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: "20px", fontWeight: 700 }}>{orcamento.numero}</div>
@@ -393,6 +407,7 @@ export const OrcamentoPdf = forwardRef<HTMLDivElement, OrcamentoPdfProps>(
           </div>
         )}
 
+        {/* Signature block */}
         <div
           style={{
             marginTop: "48px",
@@ -418,56 +433,45 @@ export const OrcamentoPdf = forwardRef<HTMLDivElement, OrcamentoPdfProps>(
               }}
             >
               <div style={{ fontSize: "12px", fontWeight: 600 }}>
-                {tecnico.nome || "Técnico Responsável"}
+                {tecnico.empresa || tecnico.nome || "Técnico Responsável"}
               </div>
               {tecnico.registroTecnico && (
                 <div style={{ fontSize: "10px", color: "#334155", marginTop: "2px" }}>
                   {tecnico.registroTecnico}
                 </div>
               )}
-              {tecnico.endereco && (
+              {tecnico.telefone && (
                 <div style={{ fontSize: "10px", color: "#64748b", marginTop: "2px" }}>
-                  {tecnico.endereco}
+                  Tel: {tecnico.telefone}
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {aprovacaoUrl && (
-          <div
-            style={{
-              marginTop: "32px",
-              padding: "14px 16px",
-              borderRadius: "8px",
-              border: "1px solid #bfdbfe",
-              background: "#eff6ff",
-              textAlign: "center",
-            }}
-          >
-            <div style={{ fontSize: "11px", fontWeight: 700, color: "#1e40af", marginBottom: "4px" }}>
-              ✅ Aprovar ou recusar este orçamento
-            </div>
-            <div style={{ fontSize: "10px", color: "#334155", wordBreak: "break-all" }}>
-              {aprovacaoUrl}
-            </div>
-            <div style={{ fontSize: "9px", color: "#64748b", marginTop: "4px" }}>
-              Acesse o link acima pelo celular para responder
-            </div>
-          </div>
-        )}
-
+        {/* Footer with Orcafrio branding */}
         <div
           style={{
-            marginTop: "24px",
+            marginTop: "32px",
             paddingTop: "12px",
             borderTop: "1px solid #e2e8f0",
-            textAlign: "center",
-            fontSize: "10px",
-            color: "#94a3b8",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "10px",
           }}
         >
-          Documento gerado pelo sistema Orcafrio · Orçamento Inteligente
+          <img
+            src="/logo.jpg"
+            alt="Orcafrio"
+            crossOrigin="anonymous"
+            style={{ width: "24px", height: "24px", borderRadius: "4px", objectFit: "cover" }}
+          />
+          <div style={{ textAlign: "center", fontSize: "10px", color: "#94a3b8" }}>
+            <span style={{ fontWeight: 600, color: "#64748b" }}>ORCAFRIO</span>
+            {" · "}Orçamento Inteligente
+            {" · "}Documento gerado pelo sistema Orcafrio
+          </div>
         </div>
       </div>
     );

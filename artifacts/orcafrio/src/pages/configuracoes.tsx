@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Eraser, PenTool, Save, Settings, User, Cpu, CheckCircle2, Loader2 } from "lucide-react";
+import { Eraser, PenTool, Save, Settings, User, Cpu, CheckCircle2, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,9 @@ export default function Configuracoes() {
   const sigRef = useRef<SignaturePadHandle>(null);
 
   const [nome, setNome] = useState(profile.nome);
+  const [empresa, setEmpresa] = useState(profile.empresa);
+  const [cnpj, setCnpj] = useState(profile.cnpj);
+  const [telefone, setTelefone] = useState(profile.telefone);
   const [endereco, setEndereco] = useState(profile.endereco);
   const [registroTecnico, setRegistroTecnico] = useState(profile.registroTecnico);
   const [veiculoTipo, setVeiculoTipo] = useState(profile.veiculoTipo);
@@ -51,6 +54,17 @@ export default function Configuracoes() {
     }
   };
 
+  const handleLimparVeiculo = () => {
+    if (!confirm("Limpar todos os dados do veículo e calibração?")) return;
+    setVeiculoTipo("");
+    setVeiculoCombustivel("");
+    setVeiculoModelo("");
+    setVeiculoAno("");
+    setCalibracaoResumo("");
+    saveTecnicoProfile({ veiculoTipo: "", veiculoCombustivel: "", veiculoModelo: "", veiculoAno: "", veiculoCustoKm: "" });
+    toast({ title: "Dados do veículo removidos" });
+  };
+
   const handleClearSignature = () => {
     sigRef.current?.clear();
     setHasSignature(false);
@@ -65,6 +79,9 @@ export default function Configuracoes() {
     }
     saveTecnicoProfile({
       nome: nome.trim(),
+      empresa: empresa.trim(),
+      cnpj: cnpj.trim(),
+      telefone: telefone.trim(),
       endereco: endereco.trim(),
       registroTecnico: registroTecnico.trim(),
       veiculoTipo,
@@ -92,7 +109,7 @@ export default function Configuracoes() {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <User className="h-5 w-5 text-muted-foreground" />
-            Identificação do Técnico
+            Identificação do Técnico / Empresa
           </CardTitle>
           <CardDescription>
             Salvo apenas neste aparelho — não é enviado para nenhum servidor
@@ -100,7 +117,30 @@ export default function Configuracoes() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="nome">Nome completo</Label>
+            <Label htmlFor="empresa">Razão Social / Nome da Empresa <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+            <Input
+              id="empresa"
+              placeholder="Ex: João Silva Refrigeração ME"
+              value={empresa}
+              onChange={(e) => setEmpresa(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Aparece no cabeçalho do orçamento. Se não preenchido, usa o nome do técnico.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cnpj">CNPJ <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+            <Input
+              id="cnpj"
+              placeholder="00.000.000/0001-00"
+              value={cnpj}
+              onChange={(e) => setCnpj(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="nome">Nome do Técnico Responsável</Label>
             <Input
               id="nome"
               placeholder="Ex: João Silva"
@@ -108,8 +148,32 @@ export default function Configuracoes() {
               onChange={(e) => setNome(e.target.value)}
               autoComplete="name"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="telefone">Telefone de Contato</Label>
+            <Input
+              id="telefone"
+              placeholder="(00) 00000-0000"
+              value={telefone}
+              onChange={(e) => setTelefone(e.target.value)}
+              type="tel"
+            />
             <p className="text-xs text-muted-foreground">
-              Aparece no rodapé do orçamento (PDF e impressão)
+              Aparece no cabeçalho do orçamento
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="registro">Registro Técnico <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+            <Input
+              id="registro"
+              placeholder="Ex: CREA-SC 123456 ou CFT 78901"
+              value={registroTecnico}
+              onChange={(e) => setRegistroTecnico(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Aparece no cabeçalho do orçamento
             </p>
           </div>
 
@@ -127,100 +191,105 @@ export default function Configuracoes() {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="registro">Registro Técnico <span className="text-muted-foreground font-normal">(opcional)</span></Label>
-            <Input
-              id="registro"
-              placeholder="Ex: CREA-SC 123456 ou CFT 78901"
-              value={registroTecnico}
-              onChange={(e) => setRegistroTecnico(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Aparece abaixo do seu nome no rodapé do orçamento (PDF)
-            </p>
-          </div>
+          <div className="space-y-3 pt-2 border-t">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-medium">Veículo</Label>
+              {(veiculoTipo || veiculoCombustivel || calibracaoResumo) && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-2"
+                  onClick={handleLimparVeiculo}
+                >
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                  Limpar veículo
+                </Button>
+              )}
+            </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Tipo de Veículo</Label>
-              <Select value={veiculoTipo} onValueChange={setVeiculoTipo}>
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Moto">Moto</SelectItem>
-                  <SelectItem value="Carro">Carro</SelectItem>
-                  <SelectItem value="Van/Kombi">Van / Kombi</SelectItem>
-                  <SelectItem value="Caminhonete/Pickup">Caminhonete / Pickup</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Combustível</Label>
-              <Select value={veiculoCombustivel} onValueChange={setVeiculoCombustivel}>
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Gasolina">Gasolina</SelectItem>
-                  <SelectItem value="Etanol">Etanol</SelectItem>
-                  <SelectItem value="Flex">Flex</SelectItem>
-                  <SelectItem value="Diesel">Diesel</SelectItem>
-                  <SelectItem value="Elétrico">Elétrico</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="veiculoModelo">Modelo</Label>
-              <Input
-                id="veiculoModelo"
-                placeholder="Ex: Honda Biz 125"
-                value={veiculoModelo}
-                onChange={e => setVeiculoModelo(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="veiculoAno">Ano</Label>
-              <Input
-                id="veiculoAno"
-                placeholder="Ex: 2021"
-                value={veiculoAno}
-                onChange={e => setVeiculoAno(e.target.value)}
-                maxLength={4}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3 space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-slate-700">Calibrar veículo para IA</p>
-                <p className="text-xs text-muted-foreground">
-                  Calcula o custo real por km do seu veículo. Feito uma única vez — só refaça se trocar de veículo.
-                </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Tipo de Veículo</Label>
+                <Select value={veiculoTipo} onValueChange={setVeiculoTipo}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Moto">Moto</SelectItem>
+                    <SelectItem value="Carro">Carro</SelectItem>
+                    <SelectItem value="Van/Kombi">Van / Kombi</SelectItem>
+                    <SelectItem value="Caminhonete/Pickup">Caminhonete / Pickup</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="shrink-0 border-blue-300 text-blue-700 hover:bg-blue-100"
-                onClick={handleCalibrarVeiculo}
-                disabled={calibrando || !veiculoTipo || !veiculoCombustivel}
-              >
-                {calibrando
-                  ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Calculando...</>
-                  : <><Cpu className="mr-1.5 h-4 w-4" />Calibrar</>}
-              </Button>
-            </div>
-            {calibracaoResumo && (
-              <div className="flex items-start gap-2 text-xs text-green-700 bg-green-50 rounded-md p-2 border border-green-200">
-                <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                <span>{calibracaoResumo}</span>
+              <div className="space-y-2">
+                <Label>Combustível</Label>
+                <Select value={veiculoCombustivel} onValueChange={setVeiculoCombustivel}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Gasolina">Gasolina</SelectItem>
+                    <SelectItem value="Etanol">Etanol</SelectItem>
+                    <SelectItem value="Flex">Flex</SelectItem>
+                    <SelectItem value="Diesel">Diesel</SelectItem>
+                    <SelectItem value="Elétrico">Elétrico</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="veiculoModelo">Modelo</Label>
+                <Input
+                  id="veiculoModelo"
+                  placeholder="Ex: Honda Biz 125"
+                  value={veiculoModelo}
+                  onChange={e => setVeiculoModelo(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="veiculoAno">Ano</Label>
+                <Input
+                  id="veiculoAno"
+                  placeholder="Ex: 2021"
+                  value={veiculoAno}
+                  onChange={e => setVeiculoAno(e.target.value)}
+                  maxLength={4}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-blue-100 bg-blue-50/50 p-3 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Calibrar veículo para IA</p>
+                  <p className="text-xs text-muted-foreground">
+                    Calcula o custo real por km do seu veículo. Feito uma única vez — só refaça se trocar de veículo.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 border-blue-300 text-blue-700 hover:bg-blue-100"
+                  onClick={handleCalibrarVeiculo}
+                  disabled={calibrando || !veiculoTipo || !veiculoCombustivel}
+                >
+                  {calibrando
+                    ? <><Loader2 className="mr-1.5 h-4 w-4 animate-spin" />Calculando...</>
+                    : <><Cpu className="mr-1.5 h-4 w-4" />Calibrar</>}
+                </Button>
+              </div>
+              {calibracaoResumo && (
+                <div className="flex items-start gap-2 text-xs text-green-700 bg-green-50 rounded-md p-2 border border-green-200">
+                  <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>{calibracaoResumo}</span>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

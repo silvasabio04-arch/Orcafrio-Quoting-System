@@ -1,6 +1,6 @@
 import { useParams, Link, useLocation } from "wouter";
 import { useGetOrcamento, useUpdateOrcamentoStatus, useDeleteOrcamento, getGetOrcamentoQueryKey, getListOrcamentosQueryKey, getGetDashboardResumoQueryKey, getGetOrcamentosRecentesQueryKey } from "@workspace/api-client-react";
-import { ArrowLeft, FileText, Share2, Printer, X, Ban, Clock, User, CheckCircle, Edit, Trash2, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, Share2, Printer, X, Ban, Clock, User, CheckCircle, Edit, Trash2, Download, Loader2, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,23 @@ import { useToast } from "@/hooks/use-toast";
 import { useRef, useState } from "react";
 import { OrcamentoPdf } from "@/components/orcamento-pdf";
 import { useTecnicoProfile } from "@/lib/tecnico";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+
+const ENVIAR_COM_LINK_KEY = "orcafrio:enviarComLink";
+
+function getEnviarComLink(): boolean {
+  try {
+    const v = localStorage.getItem(ENVIAR_COM_LINK_KEY);
+    return v === null ? true : v === "true";
+  } catch {
+    return true;
+  }
+}
+
+function setEnviarComLinkPref(val: boolean) {
+  try { localStorage.setItem(ENVIAR_COM_LINK_KEY, String(val)); } catch { /* noop */ }
+}
 
 export default function OrcamentoDetalhes() {
   const { id } = useParams();
@@ -23,6 +40,7 @@ export default function OrcamentoDetalhes() {
   const tecnico = useTecnicoProfile();
   const pdfRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
+  const [enviarComLink, setEnviarComLink] = useState(getEnviarComLink);
 
   const { data: orcamento, isLoading } = useGetOrcamento(Number(id), {
     query: { enabled: !!id, queryKey: getGetOrcamentoQueryKey(Number(id)) }
@@ -79,9 +97,14 @@ export default function OrcamentoDetalhes() {
     text += `\n*Total: ${formatCurrency(orcamento.total)}*\n`;
     if (orcamento.prazoExecucao) text += `\nPrazo: ${orcamento.prazoExecucao}`;
     if (orcamento.condicoesPagamento) text += `\nPagamento: ${orcamento.condicoesPagamento}`;
-    if (tecnico.nome) text += `\n\nAtenciosamente,\n${tecnico.nome}`;
+    if (tecnico.nome || tecnico.empresa) text += `\n\nAtenciosamente,\n${tecnico.empresa || tecnico.nome}`;
     else text += `\n\nFico à disposição para dúvidas.`;
     return text;
+  };
+
+  const buildLinkText = (aprovacaoUrl: string) => {
+    if (!orcamento || !orcamento.cliente) return aprovacaoUrl;
+    return `Olá ${orcamento.cliente.nome}! Para aprovar ou recusar o orçamento *${orcamento.numero}*, acesse o link abaixo:\n\n${aprovacaoUrl}`;
   };
 
   const generatePdfBlob = async (): Promise<Blob> => {
@@ -123,6 +146,19 @@ export default function OrcamentoDetalhes() {
     setGenerating(true);
     const text = buildWhatsAppText();
     const phone = orcamento.cliente.telefone.replace(/\D/g, "");
+    const aprovacaoUrl = orcamento.aprovacaoToken
+      ? `${window.location.origin}/aprovacao/${orcamento.aprovacaoToken}`
+      : undefined;
+
+    const openLinkWhatsApp = () => {
+      if (enviarComLink && aprovacaoUrl) {
+        const linkText = buildLinkText(aprovacaoUrl);
+        setTimeout(() => {
+          window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(linkText)}`, "_blank");
+        }, 1200);
+      }
+    };
+
     try {
       const blob = await generatePdfBlob();
       const file = new File([blob], `Orcamento-${orcamento.numero}.pdf`, { type: "application/pdf" });
@@ -133,6 +169,7 @@ export default function OrcamentoDetalhes() {
           title: `Orçamento ${orcamento.numero}`,
           text,
         });
+        openLinkWhatsApp();
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -143,12 +180,14 @@ export default function OrcamentoDetalhes() {
         setTimeout(() => {
           window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(text)}`, "_blank");
         }, 800);
+        openLinkWhatsApp();
       }
 
       if (orcamento.status === "rascunho") handleUpdateStatus("enviado");
     } catch (err: unknown) {
       if (err instanceof Error && err.name !== "AbortError") {
         window.open(`https://wa.me/55${phone}?text=${encodeURIComponent(text)}`, "_blank");
+        openLinkWhatsApp();
       }
     } finally {
       setGenerating(false);
@@ -193,6 +232,8 @@ export default function OrcamentoDetalhes() {
     );
   }
 
+  const hasAprovacaoToken = !!orcamento.aprovacaoToken;
+
   return (
     <>
       {/* Hidden PDF document rendered off-screen for html2pdf capture */}
@@ -211,7 +252,6 @@ export default function OrcamentoDetalhes() {
           ref={pdfRef}
           orcamento={orcamento}
           tecnico={tecnico}
-          aprovacaoUrl={orcamento.aprovacaoToken ? `${window.location.origin}/aprovacao/${orcamento.aprovacaoToken}` : undefined}
         />
       </div>
 
@@ -277,9 +317,41 @@ export default function OrcamentoDetalhes() {
               ) : (
                 <Share2 className="mr-2 h-4 w-4" />
               )}
-              WhatsApp
+              Enviar WhatsApp
             </Button>
           </div>
+
+          {/* Opção: enviar com link de aprovação */}
+          {hasAprovacaoToken && (
+            <div
+              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border bg-muted/30 cursor-pointer select-none"
+              onClick={() => {
+                const next = !enviarComLink;
+                setEnviarComLink(next);
+                setEnviarComLinkPref(next);
+              }}
+            >
+              <Checkbox
+                id="enviar-com-link"
+                checked={enviarComLink}
+                onCheckedChange={(checked) => {
+                  const next = !!checked;
+                  setEnviarComLink(next);
+                  setEnviarComLinkPref(next);
+                }}
+                onClick={e => e.stopPropagation()}
+              />
+              <div className="flex-1">
+                <Label htmlFor="enviar-com-link" className="cursor-pointer font-medium text-sm flex items-center gap-1.5">
+                  <Link2 className="h-3.5 w-3.5 text-blue-600" />
+                  Enviar link de aprovação separadamente
+                </Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Após o PDF, abre um segundo WhatsApp só com o link
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Status Actions - Hidden in print */}
@@ -316,15 +388,22 @@ export default function OrcamentoDetalhes() {
           )}
         </div>
 
-        {/* Print Header */}
+        {/* Print Header — technician info */}
         <div className="hidden print:block mb-8 border-b pb-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <img src="/logo.jpg" alt="Orcafrio" className="h-14 w-14 rounded-lg object-cover" />
-              <div>
-                <h1 className="text-3xl font-bold text-primary">ORCAFRIO</h1>
-                <p className="text-sm text-gray-500 mt-1">Orçamento Inteligente</p>
-              </div>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {tecnico.empresa || tecnico.nome || "Técnico Responsável"}
+              </h1>
+              {tecnico.empresa && tecnico.cnpj && (
+                <p className="text-sm text-gray-500 mt-0.5">CNPJ: {tecnico.cnpj}</p>
+              )}
+              {tecnico.registroTecnico && (
+                <p className="text-sm text-gray-500">{tecnico.registroTecnico}</p>
+              )}
+              {tecnico.telefone && (
+                <p className="text-sm text-gray-500">Tel: {tecnico.telefone}</p>
+              )}
             </div>
             <div className="text-right">
               <h2 className="text-xl font-bold">{orcamento.numero}</h2>
@@ -464,7 +543,7 @@ export default function OrcamentoDetalhes() {
         </div>
 
         {/* Signature footer — visible in print only */}
-        {(tecnico.nome || tecnico.assinatura) && (
+        {(tecnico.nome || tecnico.empresa || tecnico.assinatura) && (
           <div className="hidden print:block mt-16 pt-8 border-t">
             <div className="flex justify-end">
               <div className="text-center w-64">
@@ -476,9 +555,12 @@ export default function OrcamentoDetalhes() {
                   />
                 )}
                 <div className="border-t border-gray-800 mt-1 pt-2">
-                  <p className="font-semibold text-sm">{tecnico.nome || "Técnico Responsável"}</p>
-                  {tecnico.endereco && (
-                    <p className="text-xs text-gray-500 mt-1">{tecnico.endereco}</p>
+                  <p className="font-semibold text-sm">{tecnico.empresa || tecnico.nome || "Técnico Responsável"}</p>
+                  {tecnico.registroTecnico && (
+                    <p className="text-xs text-gray-500 mt-1">{tecnico.registroTecnico}</p>
+                  )}
+                  {tecnico.telefone && (
+                    <p className="text-xs text-gray-500">{tecnico.telefone}</p>
                   )}
                 </div>
               </div>
@@ -486,9 +568,10 @@ export default function OrcamentoDetalhes() {
           </div>
         )}
 
-        {/* Print Footer */}
-        <div className="hidden print:block mt-8 text-center text-xs text-gray-400">
-          <p>Documento gerado pelo sistema Orcafrio · Orçamento Inteligente</p>
+        {/* Print Footer with Orcafrio branding */}
+        <div className="hidden print:flex print:items-center print:justify-center print:gap-2 mt-8 text-center text-xs text-gray-400">
+          <img src="/logo.jpg" alt="Orcafrio" className="h-5 w-5 rounded object-cover" />
+          <span><strong className="text-gray-500">ORCAFRIO</strong> · Orçamento Inteligente · Documento gerado pelo sistema Orcafrio</span>
         </div>
       </div>
     </>
